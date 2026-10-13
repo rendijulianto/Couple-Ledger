@@ -10,6 +10,20 @@ jobs:
   test-and-verify:
     name: Test & Verification
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ledger_dev
+          POSTGRES_PASSWORD: ledger_dev_password
+          POSTGRES_DB: couple_ledger_dev
+        ports:
+          - 5436:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -28,8 +42,23 @@ jobs:
       - name: Run Lint
         run: bun run lint
 
+      - name: Build Application
+        run: bun run build
+
+      - name: Run Database Migrations
+        run: bun run db:migrate
+        env:
+          DATABASE_URL: postgresql://ledger_dev:ledger_dev_password@localhost:5436/couple_ledger_dev
+
+      - name: Seed Default Categories for Testing
+        run: bun run db:seed
+        env:
+          DATABASE_URL: postgresql://ledger_dev:ledger_dev_password@localhost:5436/couple_ledger_dev
+
       - name: Run Tests
         run: bun test
+        env:
+          DATABASE_URL: postgresql://ledger_dev:ledger_dev_password@localhost:5436/couple_ledger_dev
 
   deploy:
     name: Deploy to Production VPS
