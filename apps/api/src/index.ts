@@ -12,7 +12,7 @@ import { transactionController } from "./controllers/transaction.controller";
 import { budgetController } from "./controllers/budget.controller";
 import { telegramController } from "./controllers/telegram.controller";
 
-import { existsSync } from "fs";
+import { existsSync, statSync } from "fs";
 import { resolve } from "path";
 
 export const app = new Elysia()
@@ -25,7 +25,7 @@ export const app = new Elysia()
   })
   .use(
     cors({
-      origin: [config.webUrl, "http://localhost:5174", "http://localhost:5173"],
+      origin: true,
       credentials: true,
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     }),
@@ -78,15 +78,27 @@ if (staticDir) {
     }
 
     const requestedPath = path.replace(/^\//, "");
-    const targetFile = resolve(staticDir, requestedPath);
-    if (
-      existsSync(targetFile) &&
-      !targetFile.endsWith("/") &&
-      !targetFile.endsWith("\\")
-    ) {
-      return Bun.file(targetFile);
+    if (requestedPath) {
+      const targetFile = resolve(staticDir, requestedPath);
+      if (existsSync(targetFile)) {
+        try {
+          const stat = statSync(targetFile);
+          if (stat.isFile()) {
+            return Bun.file(targetFile);
+          }
+        } catch {
+          // ignore error and fallback to index.html
+        }
+      }
     }
-    return Bun.file(resolve(staticDir, "index.html"));
+
+    const indexHtml = resolve(staticDir, "index.html");
+    if (existsSync(indexHtml)) {
+      set.headers["Content-Type"] = "text/html; charset=utf-8";
+      return Bun.file(indexHtml);
+    }
+
+    return "Couple Ledger API is running";
   });
 }
 
