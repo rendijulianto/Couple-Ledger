@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Check, X, Clock, AlertCircle, ArrowRight, Loader2, Calendar } from "lucide-react";
 import { formatRupiah } from "@couple-ledger/shared";
 import { useAuth } from "../context/AuthContext";
@@ -63,6 +63,7 @@ export function PendingApprovalsCard({ onRefreshNeeded }: PendingApprovalsCardPr
   const [policyApprovals, setPolicyApprovals] = useState<PolicyApprovalItem[]>([]);
   const [isFetching, setIsFetching] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const isReviewingRef = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchApprovals = useCallback(async () => {
@@ -95,8 +96,12 @@ export function PendingApprovalsCard({ onRefreshNeeded }: PendingApprovalsCardPr
   }, [fetchApprovals]);
 
   const handleReviewTransaction = async (approvalId: string, action: "APPROVE" | "REJECT") => {
+    // 🛡️ Synchronous debounce guard against double clicks
+    if (isReviewingRef.current || processingId) return;
+    isReviewingRef.current = true;
     setProcessingId(approvalId);
     setErrorMessage(null);
+
     try {
       const res = await api.transactions
         .approvals({ id: approvalId })
@@ -129,13 +134,18 @@ export function PendingApprovalsCard({ onRefreshNeeded }: PendingApprovalsCardPr
       const msg = err instanceof Error ? err.message : "Terjadi kesalahan";
       setErrorMessage(msg);
     } finally {
+      isReviewingRef.current = false;
       setProcessingId(null);
     }
   };
 
   const handleReviewPolicy = async (approvalId: string, action: "APPROVE" | "REJECT") => {
+    // 🛡️ Synchronous debounce guard against double clicks
+    if (isReviewingRef.current || processingId) return;
+    isReviewingRef.current = true;
     setProcessingId(approvalId);
     setErrorMessage(null);
+
     try {
       const res = await api.workspaces["policy-approvals"]({ id: approvalId }).review.post({
         action,
@@ -168,6 +178,7 @@ export function PendingApprovalsCard({ onRefreshNeeded }: PendingApprovalsCardPr
       const msg = err instanceof Error ? err.message : "Terjadi kesalahan";
       setErrorMessage(msg);
     } finally {
+      isReviewingRef.current = false;
       setProcessingId(null);
     }
   };
@@ -258,7 +269,7 @@ export function PendingApprovalsCard({ onRefreshNeeded }: PendingApprovalsCardPr
                       type="button"
                       disabled={isProcessing}
                       onClick={() => handleReviewPolicy(item.id, "REJECT")}
-                      className="px-2.5 py-1.5 rounded-md border border-hairline hover:bg-surface-soft active:scale-95 text-ink text-xs font-semibold flex items-center gap-1 transition-all disabled:opacity-50"
+                      className="px-2.5 py-1.5 rounded-md border border-hairline hover:bg-surface-soft active:scale-95 text-ink text-xs font-semibold flex items-center gap-1 transition-all disabled:opacity-50 disabled:pointer-events-none"
                     >
                       <X className="w-3.5 h-3.5 text-ink-muted" />
                       <span>Tolak</span>
@@ -267,7 +278,7 @@ export function PendingApprovalsCard({ onRefreshNeeded }: PendingApprovalsCardPr
                       type="button"
                       disabled={isProcessing}
                       onClick={() => handleReviewPolicy(item.id, "APPROVE")}
-                      className="px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold flex items-center gap-1 shadow-xs transition-all disabled:opacity-50"
+                      className="px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold flex items-center gap-1 shadow-xs transition-all disabled:opacity-50 disabled:pointer-events-none"
                     >
                       {isProcessing ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -369,7 +380,7 @@ export function PendingApprovalsCard({ onRefreshNeeded }: PendingApprovalsCardPr
                       type="button"
                       disabled={isProcessing}
                       onClick={() => handleReviewTransaction(item.id, "REJECT")}
-                      className="px-2.5 py-1.5 rounded-md border border-hairline hover:bg-surface-soft active:scale-95 text-ink text-xs font-semibold flex items-center gap-1 transition-all disabled:opacity-50"
+                      className="px-2.5 py-1.5 rounded-md border border-hairline hover:bg-surface-soft active:scale-95 text-ink text-xs font-semibold flex items-center gap-1 transition-all disabled:opacity-50 disabled:pointer-events-none"
                     >
                       <X className="w-3.5 h-3.5 text-ink-muted" />
                       <span>Tolak</span>
@@ -378,7 +389,7 @@ export function PendingApprovalsCard({ onRefreshNeeded }: PendingApprovalsCardPr
                       type="button"
                       disabled={isProcessing}
                       onClick={() => handleReviewTransaction(item.id, "APPROVE")}
-                      className="px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold flex items-center gap-1 shadow-xs transition-all disabled:opacity-50"
+                      className="px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold flex items-center gap-1 shadow-xs transition-all disabled:opacity-50 disabled:pointer-events-none"
                     >
                       {isProcessing ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />

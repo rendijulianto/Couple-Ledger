@@ -83,10 +83,12 @@ export function HomePage({
   const [isEditingBudget, setIsEditingBudget] = useState(false);
   const [budgetInput, setBudgetInput] = useState<number>(0);
   const [isSavingBudget, setIsSavingBudget] = useState(false);
+  const isSavingBudgetRef = useRef(false);
 
   // Soft Delete confirmation state
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const isDeletingRef = useRef(false);
   const [approvalKey, setApprovalKey] = useState(0);
 
   // DBA Optimization: Wallets are static per workspace, NOT re-fetched on every month change
@@ -213,6 +215,9 @@ export function HomePage({
   const handleSaveBudget = async () => {
     if (!activeWorkspace) return;
 
+    // 🛡️ Synchronous debounce guard against double clicks
+    if (isSavingBudgetRef.current || isSavingBudget) return;
+
     if (budgetInput < 0) {
       showToast({
         type: "warning",
@@ -222,6 +227,7 @@ export function HomePage({
       return;
     }
 
+    isSavingBudgetRef.current = true;
     setIsSavingBudget(true);
 
     try {
@@ -251,12 +257,17 @@ export function HomePage({
         message: msg,
       });
     } finally {
+      isSavingBudgetRef.current = false;
       setIsSavingBudget(false);
     }
   };
 
   const handleSoftDelete = async (id: string) => {
+    // 🛡️ Synchronous debounce guard against double clicks
+    if (isDeletingRef.current || isDeleting) return;
+    isDeletingRef.current = true;
     setIsDeleting(true);
+
     try {
       const res = await api.transactions({ id }).delete();
       if (res.data?.success) {
@@ -280,6 +291,7 @@ export function HomePage({
         }
       }
     } finally {
+      isDeletingRef.current = false;
       setIsDeleting(false);
       setDeleteId(null);
     }
@@ -441,9 +453,18 @@ export function HomePage({
                 type="button"
                 onClick={handleSaveBudget}
                 disabled={isSavingBudget}
-                className="px-3 py-1.5 bg-rausch text-white rounded-sm text-xs font-semibold hover:bg-rausch-active active:scale-95 transition-all"
+                className={`px-3 py-1.5 bg-rausch text-white rounded-sm text-xs font-semibold hover:bg-rausch-active active:scale-95 transition-all flex items-center gap-1.5 ${
+                  isSavingBudget ? "opacity-75 pointer-events-none cursor-not-allowed select-none" : ""
+                }`}
               >
-                Simpan
+                {isSavingBudget ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Menyimpan...</span>
+                  </>
+                ) : (
+                  "Simpan"
+                )}
               </button>
               <button
                 type="button"
@@ -680,8 +701,9 @@ export function HomePage({
             <div className="flex gap-2 pt-2">
               <button
                 type="button"
+                disabled={isDeleting}
                 onClick={() => setDeleteId(null)}
-                className="flex-1 py-2 text-xs font-medium text-ink border border-hairline rounded-sm hover:bg-surface-soft active:scale-95 transition-all"
+                className="flex-1 py-2 text-xs font-medium text-ink border border-hairline rounded-sm hover:bg-surface-soft active:scale-95 transition-all disabled:opacity-50"
               >
                 Batal
               </button>
@@ -689,9 +711,18 @@ export function HomePage({
                 type="button"
                 disabled={isDeleting}
                 onClick={() => handleSoftDelete(deleteId)}
-                className="flex-1 py-2 text-xs font-semibold text-white bg-error hover:bg-red-700 rounded-sm active:scale-95 transition-all"
+                className={`flex-1 py-2 text-xs font-semibold text-white bg-error hover:bg-red-700 rounded-sm active:scale-95 transition-all flex items-center justify-center gap-1.5 ${
+                  isDeleting ? "opacity-75 pointer-events-none cursor-not-allowed select-none" : ""
+                }`}
               >
-                {isDeleting ? "Menghapus..." : "Hapus"}
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Menghapus...</span>
+                  </>
+                ) : (
+                  "Hapus"
+                )}
               </button>
             </div>
           </div>

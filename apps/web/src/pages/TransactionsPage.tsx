@@ -80,10 +80,12 @@ export function TransactionsPage() {
   const [editOccurredOn, setEditOccurredOn] = useState<string>("");
   const [editCategoryId, setEditCategoryId] = useState<string>("");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const isSavingEditRef = useRef(false);
 
   // Soft Delete State
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const isDeletingRef = useRef(false);
   const [approvalKey, setApprovalKey] = useState(0);
 
   // DBA Optimization: Static categories & wallets only fetched when workspace changes, NOT on filter changes
@@ -244,6 +246,9 @@ export function TransactionsPage() {
   const handleSaveEdit = async () => {
     if (!editingTx) return;
 
+    // 🛡️ Synchronous debounce guard against double clicks
+    if (isSavingEditRef.current || isSavingEdit) return;
+
     if (editAmount <= 0) {
       showToast({
         type: "warning",
@@ -262,6 +267,7 @@ export function TransactionsPage() {
       return;
     }
 
+    isSavingEditRef.current = true;
     setIsSavingEdit(true);
 
     try {
@@ -308,12 +314,17 @@ export function TransactionsPage() {
         message: msg,
       });
     } finally {
+      isSavingEditRef.current = false;
       setIsSavingEdit(false);
     }
   };
 
   const handleSoftDelete = async (id: string) => {
+    // 🛡️ Synchronous debounce guard against double clicks
+    if (isDeletingRef.current || isDeleting) return;
+    isDeletingRef.current = true;
     setIsDeleting(true);
+
     try {
       const res = await api.transactions({ id }).delete();
       if (res.data?.success) {
@@ -337,6 +348,7 @@ export function TransactionsPage() {
         }
       }
     } finally {
+      isDeletingRef.current = false;
       setIsDeleting(false);
       setDeleteId(null);
     }
@@ -847,9 +859,18 @@ export function TransactionsPage() {
                 type="button"
                 disabled={isSavingEdit || editAmount <= 0}
                 onClick={handleSaveEdit}
-                className="flex-1 py-2 text-xs font-semibold text-white bg-rausch hover:bg-rausch-active rounded-sm"
+                className={`flex-1 py-2 text-xs font-semibold text-white bg-rausch hover:bg-rausch-active rounded-sm flex items-center justify-center gap-1.5 transition-all ${
+                  isSavingEdit ? "opacity-75 pointer-events-none cursor-not-allowed select-none" : ""
+                }`}
               >
-                {isSavingEdit ? "Menyimpan..." : "Simpan Perubahan"}
+                {isSavingEdit ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Menyimpan...</span>
+                  </>
+                ) : (
+                  "Simpan Perubahan"
+                )}
               </button>
             </div>
           </div>
@@ -867,8 +888,9 @@ export function TransactionsPage() {
             <div className="flex gap-2 pt-2">
               <button
                 type="button"
+                disabled={isDeleting}
                 onClick={() => setDeleteId(null)}
-                className="flex-1 py-2 text-xs font-medium text-ink border border-hairline rounded-sm hover:bg-surface-soft"
+                className="flex-1 py-2 text-xs font-medium text-ink border border-hairline rounded-sm hover:bg-surface-soft disabled:opacity-50"
               >
                 Batal
               </button>
@@ -876,9 +898,18 @@ export function TransactionsPage() {
                 type="button"
                 disabled={isDeleting}
                 onClick={() => handleSoftDelete(deleteId)}
-                className="flex-1 py-2 text-xs font-semibold text-white bg-error hover:bg-red-700 rounded-sm"
+                className={`flex-1 py-2 text-xs font-semibold text-white bg-error hover:bg-red-700 rounded-sm flex items-center justify-center gap-1.5 transition-all ${
+                  isDeleting ? "opacity-75 pointer-events-none cursor-not-allowed select-none" : ""
+                }`}
               >
-                {isDeleting ? "Menghapus..." : "Hapus"}
+                {isDeleting ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Menghapus...</span>
+                  </>
+                ) : (
+                  "Hapus"
+                )}
               </button>
             </div>
           </div>

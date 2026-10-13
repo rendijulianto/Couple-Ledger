@@ -218,5 +218,64 @@ describe("Transaction API Endpoints & Soft Delete", () => {
     const bodyList = (await resList.json()) as { data: Array<{ id: string }> };
     expect(bodyList.data.some((t) => t.id === transactionId)).toBe(false);
   });
+
+  it("POST /transactions deduplicates rapid duplicate clicks within window", async () => {
+    // 🛡️ User double-clicks "Catat Transaksi" within 200ms
+    const payload = {
+      workspaceId,
+      categoryId,
+      walletId,
+      type: "EXPENSE",
+      amountIdr: 75000,
+      note: "Beli bensin",
+      occurredOn: "2026-10-12",
+    };
+
+    const [res1, res2] = await Promise.all([
+      app.handle(
+        new Request("http://localhost:3000/transactions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        }),
+      ),
+      app.handle(
+        new Request("http://localhost:3000/transactions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        }),
+      ),
+    ]);
+
+    expect(res1.status).toBe(201);
+    expect(res2.status).toBe(201);
+
+    const body1 = (await res1.json()) as { success: boolean; data: { id: string } };
+    const body2 = (await res2.json()) as { success: boolean; data: { id: string } };
+
+    // Both requests must return the SAME transaction ID (deduplicated)
+    expect(body1.data.id).toBe(body2.data.id);
+
+    // Verify database only has 1 record for this transaction
+    const resList = await app.handle(
+      new Request(
+        `http://localhost:3000/transactions?workspaceId=${workspaceId}&month=2026-10`,
+        {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      ),
+    );
+    const bodyList = (await resList.json()) as { data: Array<{ id: string; amountIdr: number }> };
+    const matches = bodyList.data.filter((t) => t.amountIdr === 75000);
+    expect(matches.length).toBe(1);
+  });
 });
 

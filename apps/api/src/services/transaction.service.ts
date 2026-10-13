@@ -32,6 +32,33 @@ import { workspaceRepository } from "../repositories/drizzle/workspace.repositor
 import { formatJakartaDateISO } from "@couple-ledger/shared";
 import type { RequestMeta } from "./auth.service";
 
+class KeyedMutex {
+  private locks = new Map<string, Promise<void>>();
+
+  async runExclusive<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    const prevLock = this.locks.get(key) || Promise.resolve();
+
+    let release: () => void;
+    const nextLock = new Promise<void>((res) => {
+      release = res;
+    });
+
+    this.locks.set(key, nextLock);
+
+    try {
+      await prevLock;
+      return await fn();
+    } finally {
+      release!();
+      if (this.locks.get(key) === nextLock) {
+        this.locks.delete(key);
+      }
+    }
+  }
+}
+
+const transactionCreationMutex = new KeyedMutex();
+
 export class TransactionService {
   constructor(
     private readonly transactions: ITransactionRepository = transactionRepository,
@@ -49,57 +76,74 @@ export class TransactionService {
     input: CreateTransactionInput,
     meta?: RequestMeta,
   ): Promise<PopulatedTransaction> {
-    await this.ensureWorkspaceMembership(input.workspaceId, userId);
-    await this.ensureCategoryAccessible(input.categoryId, input.workspaceId);
+    const lockKey = `${input.workspaceId}:${userId}`;
+    return transactionCreationMutex.runExclusive(lockKey, async () => {
+      await this.ensureWorkspaceMembership(input.workspaceId, userId);
+      await this.ensureCategoryAccessible(input.categoryId, input.workspaceId);
 
-    if (input.walletId) {
-      await this.ensureWalletValid(input.walletId, input.workspaceId);
-    }
+      if (input.walletId) {
+        await this.ensureWalletValid(input.walletId, input.workspaceId);
+      }
 
-    const ws = await this.workspaces.findById(input.workspaceId);
-    let resolvedDate = input.occurredOn;
-    // Jika aturan ruang STRICT_TODAY (default), tanggal wajib hari ini (Jakarta)
-    if (ws && ws.datePolicy !== "FLEXIBLE") {
-      resolvedDate = formatJakartaDateISO(new Date());
-    }
+      const ws = await this.workspaces.findById(input.workspaceId);
+      let resolvedDate = input.occurredOn;
+      // Jika aturan ruang STRICT_TODAY (default), tanggal wajib hari ini (Jakarta)
+      if (ws && ws.datePolicy !== "FLEXIBLE") {
+        resolvedDate = formatJakartaDateISO(new Date());
+      }
 
-    const transaction = await this.transactions.create({
-      workspaceId: input.workspaceId,
-      createdById: userId,
-      categoryId: input.categoryId,
-      walletId: input.walletId ?? null,
-      type: input.type,
-      amountIdr: input.amountIdr,
-      note: input.note ?? null,
-      occurredOn: resolvedDate,
+      // 🛡️ ANTI RACE CONDITION / DOUBLE-SUBMIT GUARD:
+      // Cek apakah ada transaksi identik yang dibuat dalam 2 detik terakhir (mencegah klik ganda cepat)
+      const recentDuplicate = await this.transactions.findRecentDuplicate(
+        input.workspaceId,
+        userId,
+        input.amountIdr,
+        input.categoryId,
+        resolvedDate,
+        2,
+      );
+      if (recentDuplicate) {
+        return recentDuplicate;
+      }
+
+      const transaction = await this.transactions.create({
+        workspaceId: input.workspaceId,
+        createdById: userId,
+        categoryId: input.categoryId,
+        walletId: input.walletId ?? null,
+        type: input.type,
+        amountIdr: input.amountIdr,
+        note: input.note ?? null,
+        occurredOn: resolvedDate,
+      });
+
+      await this.audit.record({
+        workspaceId: input.workspaceId,
+        actorId: userId,
+        action: "TRANSACTION_CREATED",
+        entityType: "TRANSACTION",
+        entityId: transaction.id,
+        after: {
+          amountIdr: transaction.amountIdr,
+          type: transaction.type,
+          occurredOn: transaction.occurredOn,
+          note: transaction.note,
+        },
+        ip: meta?.ip,
+        userAgent: meta?.userAgent,
+        requestId: meta?.requestId,
+      });
+
+      const populated = await this.transactions.findById(transaction.id);
+      if (!populated) {
+        throw new Error("Gagal mengambil data transaksi setelah dibuat");
+      }
+
+      // Trigger non-blocking async Telegram notification (excludes creator)
+      this.notifier.notifyTransactionCreated(populated, populated.createdBy);
+
+      return populated;
     });
-
-    await this.audit.record({
-      workspaceId: input.workspaceId,
-      actorId: userId,
-      action: "TRANSACTION_CREATED",
-      entityType: "TRANSACTION",
-      entityId: transaction.id,
-      after: {
-        amountIdr: transaction.amountIdr,
-        type: transaction.type,
-        occurredOn: transaction.occurredOn,
-        note: transaction.note,
-      },
-      ip: meta?.ip,
-      userAgent: meta?.userAgent,
-      requestId: meta?.requestId,
-    });
-
-    const populated = await this.transactions.findById(transaction.id);
-    if (!populated) {
-      throw new Error("Gagal mengambil data transaksi setelah dibuat");
-    }
-
-    // Trigger non-blocking async Telegram notification (excludes creator)
-    this.notifier.notifyTransactionCreated(populated, populated.createdBy);
-
-    return populated;
   }
 
   async listTransactions(

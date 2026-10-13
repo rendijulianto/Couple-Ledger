@@ -30,5 +30,13 @@ export interface ITransactionRepository {
     month: string,
     categoryId?: string,
   ): Promise<number>;
+  findRecentDuplicate(
+    workspaceId: string,
+    createdById: string,
+    amountIdr: number,
+    categoryId: string,
+    occurredOn: string,
+    windowSeconds?: number,
+  ): Promise<PopulatedTransaction | null>;
 }
 

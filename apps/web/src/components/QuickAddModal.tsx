@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X, Check, Wallet, Calendar, Tag, AlertCircle } from "lucide-react";
 import { formatRupiah, formatJakartaDateISO } from "@couple-ledger/shared";
 import { api } from "../lib/api";
@@ -47,6 +47,7 @@ export function QuickAddModal({
   const [wallets, setWallets] = useState<WalletItem[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Quick amount chips
@@ -121,6 +122,9 @@ export function QuickAddModal({
     e.preventDefault();
     if (!activeWorkspace) return;
 
+    // 🛡️ Synchronous debounce guard against double clicks
+    if (isSubmittingRef.current || isSubmitting) return;
+
     if (amount <= 0) {
       setErrorMessage("Nominal transaksi harus lebih dari Rp 0");
       showToast({
@@ -151,6 +155,7 @@ export function QuickAddModal({
       return;
     }
 
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     setErrorMessage(null);
 
@@ -190,6 +195,7 @@ export function QuickAddModal({
         message: msg,
       });
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -443,10 +449,15 @@ export function QuickAddModal({
             <button
               type="submit"
               disabled={isSubmitting || amount <= 0}
-              className="w-full min-h-[48px] bg-rausch hover:bg-rausch-active disabled:bg-rausch-disabled text-white font-bold text-sm rounded-xl shadow-sm active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+              className={`w-full min-h-[48px] bg-rausch hover:bg-rausch-active disabled:bg-rausch-disabled text-white font-bold text-sm rounded-xl shadow-sm active:scale-[0.99] transition-all flex items-center justify-center gap-2 ${
+                isSubmitting ? "opacity-75 pointer-events-none cursor-not-allowed select-none" : ""
+              }`}
             >
               {isSubmitting ? (
-                <span className="animate-pulse">Menyimpan...</span>
+                <div className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Menyimpan...</span>
+                </div>
               ) : (
                 `Simpan ${type === "EXPENSE" ? "Pengeluaran" : "Pemasukan"} (${formatRupiah(amount)})`
               )}

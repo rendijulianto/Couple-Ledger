@@ -182,6 +182,58 @@ export class DrizzleTransactionRepository implements ITransactionRepository {
 
     return result ? Number(result.total) : 0;
   }
+
+  async findRecentDuplicate(
+    workspaceId: string,
+    createdById: string,
+    amountIdr: number,
+    categoryId: string,
+    occurredOn: string,
+    windowSeconds: number = 2,
+  ): Promise<PopulatedTransaction | null> {
+    const thresholdTime = new Date(Date.now() - windowSeconds * 1000);
+
+    const rows = await db
+      .select({
+        transaction: transactions,
+        category: categories,
+        wallet: wallets,
+        createdBy: {
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+        },
+      })
+      .from(transactions)
+      .innerJoin(categories, eq(transactions.categoryId, categories.id))
+      .leftJoin(wallets, eq(transactions.walletId, wallets.id))
+      .innerJoin(users, eq(transactions.createdById, users.id))
+      .where(
+        and(
+          eq(transactions.workspaceId, workspaceId),
+          eq(transactions.createdById, createdById),
+          eq(transactions.amountIdr, amountIdr),
+          eq(transactions.categoryId, categoryId),
+          eq(transactions.occurredOn, occurredOn),
+          isNull(transactions.deletedAt),
+          gte(transactions.createdAt, thresholdTime),
+        ),
+      )
+      .orderBy(desc(transactions.createdAt))
+      .limit(1);
+
+    const row = rows[0];
+    if (!row) return null;
+
+    return {
+      ...row.transaction,
+      category: row.category,
+      wallet: row.wallet,
+      createdBy: row.createdBy,
+    };
+  }
 }
 
 export const transactionRepository = new DrizzleTransactionRepository();
