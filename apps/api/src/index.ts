@@ -92,14 +92,20 @@ if (staticDir) {
 
 // Only listen if this file is executed directly (not when imported in tests)
 if (process.env.NODE_ENV !== "test") {
-  app.listen(config.port, () => {
-    console.log(
-      `🦊 Couple Ledger API is running at http://localhost:${config.port}`,
-    );
-    console.log(
-      `📚 Swagger documentation at http://localhost:${config.port}/swagger`,
-    );
-  });
+  app.listen(
+    {
+      port: config.port,
+      hostname: "0.0.0.0",
+    },
+    () => {
+      console.log(
+        `🦊 Couple Ledger API is running at http://0.0.0.0:${config.port}`,
+      );
+      console.log(
+        `📚 Swagger documentation at http://0.0.0.0:${config.port}/swagger`,
+      );
+    },
+  );
 }
 
 export type App = typeof app;
