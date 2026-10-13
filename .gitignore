@@ -85,3 +85,17 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# ==========================================
+# AI Assistant Prompts, Instructions, & Specs
+# ==========================================
+GEMINI.md
+AGENTS.md
+AGENT.md
+project.md
+design.md
+CLAUDE.md
+CURSOR.md
+.gemini/
+.claude/
+.cursor/
