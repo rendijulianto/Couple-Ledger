@@ -49,6 +49,10 @@ backups/
 docker-data/
 dev_postgres_data/
 
+# Pengecualian: File migrasi schema Drizzle wajib di-track!
+!apps/api/src/db/migrations/*.sql
+!apps/api/src/db/migrations/**/*.sql
+
 # ==========================================
 # Logs & Process Outputs
 # ==========================================

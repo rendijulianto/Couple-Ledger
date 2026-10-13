@@ -28,11 +28,9 @@ fi
 
 export APP_VERSION="$VERSION"
 
-# Periksa apakah image docker ada, jika belum build image lokal
-if ! docker image inspect "couple-ledger:$VERSION" > /dev/null 2>&1; then
-    echo "🔨 Image couple-ledger:$VERSION belum tersedia. Membangun image..."
-    docker build -t "couple-ledger:$VERSION" .
-fi
+# Selalu build/perbarui image docker dengan layer cache
+echo "🔨 Membangun/memperbarui image Docker: couple-ledger:$VERSION..."
+docker build -t "couple-ledger:$VERSION" .
 
 # Simpan versi sebelumnya untuk rollback jika diperlukan
 PREV_IMAGE=$(docker compose -f "$COMPOSE_FILE" ps app --format '{{.Image}}' 2>/dev/null || echo "")
