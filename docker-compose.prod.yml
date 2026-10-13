@@ -1,0 +1,50 @@
+services:
+  app:
+    image: couple-ledger:${APP_VERSION:-latest}
+    restart: unless-stopped
+    env_file: .env.prod
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  migrate:
+    image: couple-ledger:${APP_VERSION:-latest}
+    command: bun run --filter api db:migrate
+    env_file: .env.prod
+    profiles: ["tools"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env.prod
+    volumes:
+      - ledger_pg_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env.prod
+    entrypoint: ["/bin/sh", "/scripts/backup.sh"]
+    volumes:
+      - ./scripts:/scripts:ro
+      - ledger_backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  ledger_pg_prod:
+    external: true
+  ledger_backups:
+    external: true
+

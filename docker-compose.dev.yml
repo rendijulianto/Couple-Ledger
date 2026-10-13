@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: couple_ledger_postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ledger_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ledger_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-couple_ledger_dev}
+    ports:
+      - "${DB_PORT:-5436}:5432"
+    volumes:
+      - dev_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ledger_dev} -d ${POSTGRES_DB:-couple_ledger_dev}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.dev
+    container_name: couple_ledger_api_dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ledger_dev}:${POSTGRES_PASSWORD:-ledger_dev_password}@postgres:5432/${POSTGRES_DB:-couple_ledger_dev}
+      APP_SECRET: ${APP_SECRET:-dev_super_secret_key_at_least_32_characters_long}
+      WEB_URL: http://localhost:${WEB_PORT:-5174}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:-dev_webhook_secret_123}
+    ports:
+      - "${API_PORT:-3000}:3000"
+    volumes:
+      - ./packages/shared:/app/packages/shared
+      - ./apps/api/src:/app/apps/api/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.dev
+    container_name: couple_ledger_web_dev
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:${API_PORT:-3000}
+    ports:
+      - "${WEB_PORT:-5174}:5174"
+    volumes:
+      - ./packages/shared:/app/packages/shared
+      - ./apps/api/src:/app/apps/api/src
+      - ./apps/web/src:/app/apps/web/src
+      - ./apps/web/index.html:/app/apps/web/index.html
+      - ./apps/web/tailwind.config.js:/app/apps/web/tailwind.config.js
+    depends_on:
+      - api
+
+volumes:
+  dev_postgres_data:
+

@@ -1,0 +1,87 @@
+# ==========================================
+# Dependencies
+# ==========================================
+node_modules/
+.pnp
+.pnp.js
+
+# ==========================================
+# Build & Distribution Artifacts
+# ==========================================
+dist/
+build/
+.output/
+.turbo/
+*.tsbuildinfo
+.vite/
+
+# ==========================================
+# Environment & Secrets (SANGAT KRUSIAL)
+# Jangan pernah commit file .env atau kredensial nyata
+# ==========================================
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.prod.example
+!.env.dev.example
+
+# ==========================================
+# SSH Keys & SSL Certificates
+# ==========================================
+*.pem
+*.key
+*.crt
+*.cer
+*.pfx
+*.p12
+id_rsa*
+id_ed25519*
+
+# ==========================================
+# Database Dumps, Backups, & Local Data
+# ==========================================
+*.sql
+*.sql.gz
+*.dump
+emergency_backup_*.sql.gz
+backups/
+docker-data/
+dev_postgres_data/
+
+# ==========================================
+# Logs & Process Outputs
+# ==========================================
+*.log
+deploy.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ==========================================
+# Testing & Coverage
+# ==========================================
+coverage/
+.nyc_output/
+
+# ==========================================
+# Operating System Files
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ==========================================
+# IDE & Code Editors
+# ==========================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

@@ -1,0 +1,22 @@
+FROM oven/bun:1-alpine
+
+WORKDIR /app
+
+# Copy root workspace configuration and workspace package manifests
+COPY package.json tsconfig.base.json ./
+COPY packages/shared/package.json ./packages/shared/
+COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
+
+# Install dependencies in workspace
+RUN bun install
+
+# Copy source code
+COPY packages/shared ./packages/shared
+COPY apps/api ./apps/api
+
+WORKDIR /app/apps/api
+
+EXPOSE 3000
+
+CMD ["bun", "--watch", "src/index.ts"]

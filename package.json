@@ -1,0 +1,26 @@
+{
+  "name": "couple-ledger",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun --filter '*' dev",
+    "dev:docker": "docker compose -f docker-compose.dev.yml --env-file .env.dev up --build",
+    "dev:docker:down": "docker compose -f docker-compose.dev.yml --env-file .env.dev down",
+    "db:generate": "bun --filter api db:generate",
+    "db:migrate": "bun --filter api db:migrate",
+    "db:seed": "bun --filter api db:seed",
+    "db:reset:local": "bun --filter api db:reset:local",
+    "build": "bun --filter '*' build",
+    "test": "bun test",
+    "typecheck": "bun --filter '*' typecheck",
+    "lint": "bun --filter '*' lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
+

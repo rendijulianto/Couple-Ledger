@@ -1,0 +1,23 @@
+FROM oven/bun:1-alpine
+
+WORKDIR /app
+
+# Copy root workspace configuration and workspace package manifests
+COPY package.json tsconfig.base.json ./
+COPY packages/shared/package.json ./packages/shared/
+COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
+
+# Install dependencies in workspace
+RUN bun install
+
+# Copy source code needed for types and build
+COPY packages/shared ./packages/shared
+COPY apps/api ./apps/api
+COPY apps/web ./apps/web
+
+WORKDIR /app/apps/web
+
+EXPOSE 5174
+
+CMD ["bun", "run", "dev", "--host", "0.0.0.0", "--port", "5174"]

@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791817508534,
+      "tag": "0000_magical_multiple_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791855843665,
+      "tag": "0001_sharp_dracula",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791869228557,
+      "tag": "0002_slippery_phil_sheldon",
+      "breakpoints": true
+    }
+  ]
+}
