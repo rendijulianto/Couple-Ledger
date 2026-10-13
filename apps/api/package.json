@@ -7,10 +7,10 @@
   "types": "./src/index.ts",
   "scripts": {
     "dev": "bun --watch src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target bun",
+    "build": "bun build src/index.ts --outdir dist --target bun && bun build src/db/migrate.ts --outfile dist/migrate.js --target bun",
     "start": "bun dist/index.js",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "bun run src/db/migrate.ts",
+    "db:migrate": "bun dist/migrate.js || bun run src/db/migrate.ts",
     "db:seed": "bun run src/db/seed.ts",
     "db:reset:local": "bun run src/db/reset.ts",
     "typecheck": "tsc --noEmit",

@@ -11,7 +11,7 @@ services:
 
   migrate:
     image: couple-ledger:${APP_VERSION:-latest}
-    command: bun run --filter api db:migrate
+    command: bun apps/api/dist/migrate.js
     env_file: .env.prod
     profiles: ["tools"]
     depends_on:
