@@ -74,9 +74,16 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           script: |
-            set -e
-            echo "🚀 [Deploy] Menuju folder /opt/couple-ledger..."
-            cd /opt/couple-ledger
+            echo "🚀 [Deploy] Menuju folder repositori di VPS..."
+            if [ -d "/opt/couple-ledger/Couple-Ledger/.git" ]; then
+              cd /opt/couple-ledger/Couple-Ledger
+            elif [ -d "/opt/couple-ledger/.git" ]; then
+              cd /opt/couple-ledger
+            else
+              echo "❌ Error: Direktori repositori Git tidak ditemukan di VPS!"
+              exit 1
+            fi
+            echo "📍 Berada di direktori: $(pwd)"
 
             echo "📥 [Deploy] Mengambil commit terbaru dari GitHub..."
             git fetch origin main
