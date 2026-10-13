@@ -257,7 +257,7 @@ export function AuthPage() {
                     setWorkspaceName(e.target.value);
                     if (fieldErrors.workspaceName) setFieldErrors((p) => ({ ...p, workspaceName: undefined }));
                   }}
-                  placeholder="Contoh: Dompet Rendi & Dinda"
+                  placeholder="Contoh: Dompet Rendi & Syifa"
                   className={`w-full text-xs text-ink px-3 py-2.5 bg-surface-soft border rounded-xl focus:outline-none transition-colors ${
                     fieldErrors.workspaceName ? "border-error bg-error-soft/30 focus:border-error" : "border-hairline focus:border-ink"
                   }`}
@@ -383,7 +383,7 @@ export function AuthPage() {
                   setName(e.target.value);
                   if (fieldErrors.name) setFieldErrors((p) => ({ ...p, name: undefined }));
                 }}
-                placeholder="Misal: Rendi atau Dinda"
+                placeholder="Misal: Rendi atau Syifa"
                 className={`w-full text-xs text-ink px-3 py-2.5 bg-surface-soft border rounded-xl focus:outline-none transition-colors ${
                   fieldErrors.name ? "border-error bg-error-soft/30 focus:border-error" : "border-hairline focus:border-ink"
                 }`}
