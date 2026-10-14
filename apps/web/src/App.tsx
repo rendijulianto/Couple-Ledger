@@ -7,6 +7,7 @@ import { Heart } from "lucide-react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { RealtimeProvider } from "./context/RealtimeContext";
 import { Navbar } from "./components/Navbar";
 import { BottomNav, type TabType } from "./components/BottomNav";
 import { QuickAddModal } from "./components/QuickAddModal";
@@ -98,13 +99,15 @@ function AppMain() {
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <ToastProvider>
-          <AuthProvider>
-            <AppMain />
-          </AuthProvider>
-        </ToastProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <RealtimeProvider>
+              <AppMain />
+            </RealtimeProvider>
+          </ToastProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

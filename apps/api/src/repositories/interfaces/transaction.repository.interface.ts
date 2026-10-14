@@ -9,6 +9,7 @@ import type { SafeUser } from "./user.repository.interface";
 
 export type PopulatedTransaction = Transaction & {
   category: Category;
+  subcategory?: { id: string; name: string } | null;
   wallet: Wallet | null;
   createdBy: SafeUser;
   pendingApproval?: {

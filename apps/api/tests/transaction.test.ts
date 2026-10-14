@@ -277,5 +277,81 @@ describe("Transaction API Endpoints & Soft Delete", () => {
     const matches = bodyList.data.filter((t) => t.amountIdr === 75000);
     expect(matches.length).toBe(1);
   });
+
+  it("POST /transactions creates dynamic subcategory and avoids duplicates case-insensitively", async () => {
+    // 1. Buat transaksi dengan subkategori baru
+    const res1 = await app.handle(
+      new Request("http://localhost:3000/transactions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          workspaceId,
+          categoryId,
+          type: "EXPENSE",
+          amountIdr: 28000,
+          note: "Kopi pagi",
+          subcategoryName: "Kopi Kenangan",
+          occurredOn: "2026-10-12",
+        }),
+      }),
+    );
+
+    expect(res1.status).toBe(201);
+    const body1 = (await res1.json()) as {
+      success: boolean;
+      data: { id: string; subcategory?: { id: string; name: string } | null };
+    };
+    expect(body1.success).toBe(true);
+    expect(body1.data.subcategory).toBeDefined();
+    expect(body1.data.subcategory?.name).toBe("Kopi Kenangan");
+    const subId1 = body1.data.subcategory?.id;
+    expect(subId1).toBeDefined();
+
+    // 2. Buat transaksi lain dengan subkategori yang sama tapi huruf kecil (case-insensitive check)
+    const res2 = await app.handle(
+      new Request("http://localhost:3000/transactions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          workspaceId,
+          categoryId,
+          type: "EXPENSE",
+          amountIdr: 32000,
+          note: "Kopi sore",
+          subcategoryName: "kopi kenangan",
+          occurredOn: "2026-10-12",
+        }),
+      }),
+    );
+
+    expect(res2.status).toBe(201);
+    const body2 = (await res2.json()) as {
+      success: boolean;
+      data: { id: string; subcategory?: { id: string; name: string } | null };
+    };
+    expect(body2.success).toBe(true);
+    expect(body2.data.subcategory?.id).toBe(subId1);
+
+    // 3. Verifikasi GET /categories memuat subkategori tersebut di bawah parentId
+    const resCats = await app.handle(
+      new Request(`http://localhost:3000/categories?workspaceId=${workspaceId}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    );
+    expect(resCats.status).toBe(200);
+    const catsBody = (await resCats.json()) as {
+      data: Array<{ id: string; name: string; parentId?: string | null }>;
+    };
+    const createdSub = catsBody.data.find((c) => c.id === subId1);
+    expect(createdSub).toBeDefined();
+    expect(createdSub?.parentId).toBe(categoryId);
+  });
 });
 

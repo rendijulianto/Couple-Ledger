@@ -7,6 +7,7 @@ import {
   desc,
   sql,
 } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import {
   transactions,
@@ -21,6 +22,8 @@ import type {
   PopulatedTransaction,
 } from "../interfaces/transaction.repository.interface";
 import { type TransactionFilter, getMonthDateRange } from "@couple-ledger/shared";
+
+const subcategories = alias(categories, "subcategories");
 
 export class DrizzleTransactionRepository implements ITransactionRepository {
   async create(transaction: NewTransaction): Promise<Transaction> {
@@ -39,6 +42,10 @@ export class DrizzleTransactionRepository implements ITransactionRepository {
       .select({
         transaction: transactions,
         category: categories,
+        subcategory: {
+          id: subcategories.id,
+          name: subcategories.name,
+        },
         wallet: wallets,
         createdBy: {
           id: users.id,
@@ -50,6 +57,7 @@ export class DrizzleTransactionRepository implements ITransactionRepository {
       })
       .from(transactions)
       .innerJoin(categories, eq(transactions.categoryId, categories.id))
+      .leftJoin(subcategories, eq(transactions.subcategoryId, subcategories.id))
       .leftJoin(wallets, eq(transactions.walletId, wallets.id))
       .innerJoin(users, eq(transactions.createdById, users.id))
       .where(and(eq(transactions.id, id), isNull(transactions.deletedAt)))
@@ -61,6 +69,7 @@ export class DrizzleTransactionRepository implements ITransactionRepository {
     return {
       ...row.transaction,
       category: row.category,
+      subcategory: row.subcategory?.id ? { id: row.subcategory.id, name: row.subcategory.name } : null,
       wallet: row.wallet,
       createdBy: row.createdBy,
     };
@@ -107,6 +116,10 @@ export class DrizzleTransactionRepository implements ITransactionRepository {
       .select({
         transaction: transactions,
         category: categories,
+        subcategory: {
+          id: subcategories.id,
+          name: subcategories.name,
+        },
         wallet: wallets,
         createdBy: {
           id: users.id,
@@ -118,6 +131,7 @@ export class DrizzleTransactionRepository implements ITransactionRepository {
       })
       .from(transactions)
       .innerJoin(categories, eq(transactions.categoryId, categories.id))
+      .leftJoin(subcategories, eq(transactions.subcategoryId, subcategories.id))
       .leftJoin(wallets, eq(transactions.walletId, wallets.id))
       .innerJoin(users, eq(transactions.createdById, users.id))
       .where(and(...conditions))
@@ -128,6 +142,7 @@ export class DrizzleTransactionRepository implements ITransactionRepository {
     return rows.map((r) => ({
       ...r.transaction,
       category: r.category,
+      subcategory: r.subcategory?.id ? { id: r.subcategory.id, name: r.subcategory.name } : null,
       wallet: r.wallet,
       createdBy: r.createdBy,
     }));
@@ -197,6 +212,10 @@ export class DrizzleTransactionRepository implements ITransactionRepository {
       .select({
         transaction: transactions,
         category: categories,
+        subcategory: {
+          id: subcategories.id,
+          name: subcategories.name,
+        },
         wallet: wallets,
         createdBy: {
           id: users.id,
@@ -208,6 +227,7 @@ export class DrizzleTransactionRepository implements ITransactionRepository {
       })
       .from(transactions)
       .innerJoin(categories, eq(transactions.categoryId, categories.id))
+      .leftJoin(subcategories, eq(transactions.subcategoryId, subcategories.id))
       .leftJoin(wallets, eq(transactions.walletId, wallets.id))
       .innerJoin(users, eq(transactions.createdById, users.id))
       .where(
@@ -230,6 +250,7 @@ export class DrizzleTransactionRepository implements ITransactionRepository {
     return {
       ...row.transaction,
       category: row.category,
+      subcategory: row.subcategory?.id ? { id: row.subcategory.id, name: row.subcategory.name } : null,
       wallet: row.wallet,
       createdBy: row.createdBy,
     };

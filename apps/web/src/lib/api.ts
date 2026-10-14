@@ -1,7 +1,7 @@
 import { treaty } from "@elysiajs/eden";
 import type { App } from "api";
 
-const getBaseUrl = (): string => {
+export const getBaseUrl = (): string => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }

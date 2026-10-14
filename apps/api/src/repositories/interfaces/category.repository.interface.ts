@@ -5,5 +5,15 @@ export interface ICategoryRepository {
   findById(id: string): Promise<Category | null>;
   listAvailableForWorkspace(workspaceId: string): Promise<Category[]>;
   archive(id: string): Promise<void>;
+  findSubcategoryByName(
+    workspaceId: string,
+    parentId: string,
+    name: string,
+  ): Promise<Category | null>;
+  findOrCreateSubcategory(
+    workspaceId: string,
+    parentId: string,
+    name: string,
+  ): Promise<Category>;
 }
 

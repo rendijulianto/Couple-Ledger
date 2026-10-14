@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Check, Wallet, Calendar, Tag, AlertCircle } from "lucide-react";
+import { X, Check, Wallet, Calendar, Tag, AlertCircle, Plus } from "lucide-react";
 import { formatRupiah, formatJakartaDateISO } from "@couple-ledger/shared";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
@@ -18,6 +18,7 @@ interface CategoryItem {
   type: "EXPENSE" | "INCOME";
   icon: string;
   color: string;
+  parentId?: string | null;
 }
 
 interface WalletItem {
@@ -37,6 +38,9 @@ export function QuickAddModal({
   const [type, setType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
   const [amount, setAmount] = useState<number>(0);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string | null>(null);
+  const [customSubcategoryName, setCustomSubcategoryName] = useState<string>("");
+  const [isAddingCustomSub, setIsAddingCustomSub] = useState<boolean>(false);
   const [selectedWalletId, setSelectedWalletId] = useState<string>("");
   const [occurredOn, setOccurredOn] = useState<string>(
     formatJakartaDateISO(new Date()),
@@ -52,6 +56,8 @@ export function QuickAddModal({
 
   // Quick amount chips
   const quickChips = [
+    { label: "+1rb", val: 1000 },
+    { label: "+5rb", val: 5000 },
     { label: "+10rb", val: 10000 },
     { label: "+25rb", val: 25000 },
     { label: "+50rb", val: 50000 },
@@ -77,7 +83,7 @@ export function QuickAddModal({
         if (catRes.data?.success && catRes.data.data) {
           const catList = catRes.data.data as CategoryItem[];
           setCategories(catList);
-          const firstCat = catList.find((c) => c.type === type);
+          const firstCat = catList.find((c) => c.type === type && !c.parentId);
           if (firstCat) setSelectedCategoryId(firstCat.id);
         }
 
@@ -105,13 +111,25 @@ export function QuickAddModal({
     };
   }, [isOpen, activeWorkspace]);
 
-  // When type changes, auto-select the first appropriate category
+  // When type changes, auto-select the first appropriate category & reset subcategory
   const handleTypeChange = (newType: "EXPENSE" | "INCOME") => {
     setType(newType);
-    const firstCat = categories.find((c) => c.type === newType);
+    setSelectedSubcategoryId(null);
+    setCustomSubcategoryName("");
+    setIsAddingCustomSub(false);
+    const firstCat = categories.find((c) => c.type === newType && !c.parentId);
     if (firstCat) {
       setSelectedCategoryId(firstCat.id);
+    } else {
+      setSelectedCategoryId("");
     }
+  };
+
+  const handleSelectCategory = (catId: string) => {
+    setSelectedCategoryId(catId);
+    setSelectedSubcategoryId(null);
+    setCustomSubcategoryName("");
+    setIsAddingCustomSub(false);
   };
 
   const handleAddChip = (val: number) => {
@@ -163,6 +181,8 @@ export function QuickAddModal({
       const res = await api.transactions.post({
         workspaceId: activeWorkspace.id,
         categoryId: selectedCategoryId,
+        subcategoryId: selectedSubcategoryId || undefined,
+        subcategoryName: customSubcategoryName.trim() || undefined,
         walletId: selectedWalletId || undefined,
         type,
         amountIdr: Math.round(amount),
@@ -184,6 +204,9 @@ export function QuickAddModal({
       // Reset form
       setAmount(0);
       setNote("");
+      setSelectedSubcategoryId(null);
+      setCustomSubcategoryName("");
+      setIsAddingCustomSub(false);
       onSuccess();
       onClose();
     } catch (err: unknown) {
@@ -202,7 +225,8 @@ export function QuickAddModal({
 
   if (!isOpen) return null;
 
-  const filteredCategories = categories.filter((c) => c.type === type);
+  const filteredCategories = categories.filter((c) => c.type === type && !c.parentId);
+  const availableSubcategories = categories.filter((c) => c.parentId === selectedCategoryId);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-200">
@@ -270,14 +294,15 @@ export function QuickAddModal({
               <input
                 type="number"
                 min="0"
-                step="1000"
+                step="1"
+                inputMode="numeric"
                 value={amount === 0 ? "" : amount}
                 onChange={(e) => setAmount(Number(e.target.value) || 0)}
                 placeholder="0"
                 autoFocus
                 className="w-full text-2xl font-extrabold text-ink px-3 py-2.5 bg-surface-soft border border-hairline rounded-xl focus:outline-none focus:border-ink transition-colors"
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-muted font-medium">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-muted font-medium pointer-events-none">
                 {formatRupiah(amount)}
               </div>
             </div>
@@ -328,7 +353,7 @@ export function QuickAddModal({
                     <button
                       key={cat.id}
                       type="button"
-                      onClick={() => setSelectedCategoryId(cat.id)}
+                      onClick={() => handleSelectCategory(cat.id)}
                       className="group flex flex-col items-center text-center focus:outline-none transition-transform active:scale-95 p-1 rounded-lg"
                     >
                       {/* Icon Circle with active ring & check badge */}
@@ -367,6 +392,118 @@ export function QuickAddModal({
               </div>
             )}
           </div>
+
+          {/* Sub-Category Section (Chips & Inline Creatable Input) */}
+          {selectedCategoryId && (
+            <div className="space-y-1.5 pt-0.5">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider flex items-center gap-1.5">
+                  <span>Sub-Kategori</span>
+                  <span className="text-[10px] font-normal lowercase tracking-normal text-ink-muted/80">
+                    (opsional)
+                  </span>
+                </label>
+                {(selectedSubcategoryId || customSubcategoryName.trim()) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedSubcategoryId(null);
+                      setCustomSubcategoryName("");
+                      setIsAddingCustomSub(false);
+                    }}
+                    className="text-[10px] text-rausch hover:underline font-semibold"
+                  >
+                    Hapus Sub
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-1.5 items-center">
+                {availableSubcategories.map((sub) => {
+                  const isSelected = selectedSubcategoryId === sub.id;
+                  return (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedSubcategoryId(null);
+                        } else {
+                          setSelectedSubcategoryId(sub.id);
+                          setCustomSubcategoryName("");
+                          setIsAddingCustomSub(false);
+                        }
+                      }}
+                      className={`px-2.5 py-1 text-xs rounded-full border transition-all active:scale-95 flex items-center gap-1 ${
+                        isSelected
+                          ? "bg-rausch text-white border-rausch font-bold shadow-xs"
+                          : "bg-surface-soft hover:bg-surface-strong text-ink border-hairline font-medium"
+                      }`}
+                    >
+                      {isSelected && <Check className="w-3 h-3 stroke-[2.5]" />}
+                      <span>{sub.name}</span>
+                    </button>
+                  );
+                })}
+
+                {/* Input or Button to add custom subcategory */}
+                {isAddingCustomSub ? (
+                  <div className="flex items-center gap-1 bg-surface-soft border border-ink/40 rounded-full pl-2.5 pr-1 py-0.5 animate-in fade-in">
+                    <input
+                      type="text"
+                      autoFocus
+                      value={customSubcategoryName}
+                      onChange={(e) => {
+                        setCustomSubcategoryName(e.target.value);
+                        if (selectedSubcategoryId) setSelectedSubcategoryId(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          if (customSubcategoryName.trim()) {
+                            setIsAddingCustomSub(false);
+                          }
+                        }
+                      }}
+                      placeholder="Ketik sub baru..."
+                      maxLength={50}
+                      className="text-xs text-ink bg-transparent focus:outline-none w-28 sm:w-36 font-semibold"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!customSubcategoryName.trim()) {
+                          setIsAddingCustomSub(false);
+                        }
+                      }}
+                      className="p-1 rounded-full text-ink-muted hover:text-ink hover:bg-surface-strong"
+                      aria-label="Tutup sub baru"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddingCustomSub(true);
+                      setSelectedSubcategoryId(null);
+                    }}
+                    className={`px-2.5 py-1 text-xs rounded-full border border-dashed transition-all active:scale-95 flex items-center gap-1 ${
+                      customSubcategoryName.trim()
+                        ? "bg-rausch/10 border-rausch text-rausch font-bold"
+                        : "border-hairline-strong text-ink-muted hover:text-ink hover:bg-surface-soft font-medium"
+                    }`}
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>
+                      {customSubcategoryName.trim() ? customSubcategoryName : "+ Sub Baru"}
+                    </span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Wallet Selector & Date */}
           <div className="grid grid-cols-2 gap-2">

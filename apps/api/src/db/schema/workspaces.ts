@@ -7,6 +7,9 @@ export const workspaces = pgTable("workspaces", {
   datePolicy: varchar("date_policy", { length: 20 })
     .default("STRICT_TODAY")
     .notNull(),
+  theme: varchar("theme", { length: 32 })
+    .default("rausch")
+    .notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

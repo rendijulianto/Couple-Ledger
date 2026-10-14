@@ -9,6 +9,7 @@ export interface TransactionApprovalItem {
   id: string;
   workspaceId: string;
   transactionId: string;
+  
   requesterId: string;
   actionType: "UPDATE" | "DELETE";
   payload: {

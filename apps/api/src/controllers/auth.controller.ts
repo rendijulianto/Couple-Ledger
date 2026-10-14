@@ -127,6 +127,7 @@ export const authController = new Elysia({ prefix: "/auth" })
             name: w.name,
             inviteCode: w.inviteCode,
             datePolicy: w.datePolicy,
+            theme: w.theme,
             role: w.role,
             createdAt: w.createdAt.toISOString(),
             members: w.members.map((m) => ({

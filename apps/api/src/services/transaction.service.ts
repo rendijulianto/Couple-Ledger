@@ -26,6 +26,7 @@ import type {
   TransactionFilter,
 } from "@couple-ledger/shared";
 import { notifierService, NotifierService } from "./notifier.service";
+import { realtimeService, RealtimeService } from "./realtime.service";
 import type { PopulatedTransaction } from "../repositories/interfaces/transaction.repository.interface";
 import type { IWorkspaceRepository } from "../repositories/interfaces/workspace.repository.interface";
 import { workspaceRepository } from "../repositories/drizzle/workspace.repository";
@@ -69,6 +70,7 @@ export class TransactionService {
     private readonly audit: IAuditLogRepository = auditLogRepository,
     private readonly approvals: IApprovalRepository = approvalRepository,
     private readonly notifier: NotifierService = notifierService,
+    private readonly realtime: RealtimeService = realtimeService,
   ) {}
 
   async createTransaction(
@@ -106,10 +108,21 @@ export class TransactionService {
         return recentDuplicate;
       }
 
+      let resolvedSubcategoryId = input.subcategoryId ?? null;
+      if (input.subcategoryName && input.subcategoryName.trim().length > 0) {
+        const subcat = await this.categories.findOrCreateSubcategory(
+          input.workspaceId,
+          input.categoryId,
+          input.subcategoryName.trim(),
+        );
+        resolvedSubcategoryId = subcat.id;
+      }
+
       const transaction = await this.transactions.create({
         workspaceId: input.workspaceId,
         createdById: userId,
         categoryId: input.categoryId,
+        subcategoryId: resolvedSubcategoryId,
         walletId: input.walletId ?? null,
         type: input.type,
         amountIdr: input.amountIdr,
@@ -141,6 +154,19 @@ export class TransactionService {
 
       // Trigger non-blocking async Telegram notification (excludes creator)
       this.notifier.notifyTransactionCreated(populated, populated.createdBy);
+
+      this.realtime.emit(input.workspaceId, {
+        type: "TRANSACTION_CREATED",
+        actorId: userId,
+        data: {
+          id: populated.id,
+          amountIdr: populated.amountIdr,
+          type: populated.type,
+          categoryName: populated.category.name,
+          creatorName: populated.createdBy.name,
+          occurredOn: String(populated.occurredOn),
+        },
+      });
 
       return populated;
     });
@@ -235,9 +261,26 @@ export class TransactionService {
       await this.ensureWalletValid(input.walletId, existing.workspaceId);
     }
 
+    // Resolusi subkategori jika diubah
+    let resolvedSubcategoryId = input.subcategoryId !== undefined ? input.subcategoryId : existing.subcategoryId;
+    if (input.subcategoryName !== undefined) {
+      if (input.subcategoryName && input.subcategoryName.trim().length > 0) {
+        const catIdForSub = input.categoryId || existing.categoryId;
+        const subcat = await this.categories.findOrCreateSubcategory(
+          existing.workspaceId,
+          catIdForSub,
+          input.subcategoryName.trim(),
+        );
+        resolvedSubcategoryId = subcat.id;
+      } else {
+        resolvedSubcategoryId = null;
+      }
+    }
+
     // Tanggal transaksi lama tidak bisa diubah (integritas catatan & audit)
     const sanitizedInput: UpdateTransactionInput = {
       ...input,
+      subcategoryId: resolvedSubcategoryId ?? undefined,
       type: resolvedType,
       occurredOn: existing.occurredOn,
     };
@@ -291,6 +334,12 @@ export class TransactionService {
         existing,
       );
 
+      this.realtime.emit(existing.workspaceId, {
+        type: "APPROVAL_REQUESTED",
+        actorId: userId,
+        data: { transactionId: id, actionType: "UPDATE" },
+      });
+
       return {
         ...existing,
         pendingApproval: {
@@ -341,6 +390,12 @@ export class TransactionService {
       ip: meta?.ip,
       userAgent: meta?.userAgent,
       requestId: meta?.requestId,
+    });
+
+    this.realtime.emit(existing.workspaceId, {
+      type: "TRANSACTION_UPDATED",
+      actorId: userId,
+      data: { id: updated.id, amountIdr: updated.amountIdr },
     });
 
     return updated;
@@ -411,6 +466,12 @@ export class TransactionService {
         existing,
       );
 
+      this.realtime.emit(existing.workspaceId, {
+        type: "APPROVAL_REQUESTED",
+        actorId: userId,
+        data: { transactionId: id, actionType: "DELETE" },
+      });
+
       return {
         pendingApproval: true,
         approvalId: approval.id,
@@ -436,6 +497,12 @@ export class TransactionService {
       ip: meta?.ip,
       userAgent: meta?.userAgent,
       requestId: meta?.requestId,
+    });
+
+    this.realtime.emit(existing.workspaceId, {
+      type: "TRANSACTION_DELETED",
+      actorId: userId,
+      data: { id },
     });
 
     return {
@@ -527,6 +594,17 @@ export class TransactionService {
         approval.requesterId,
       );
 
+      this.realtime.emit(approval.workspaceId, {
+        type: "APPROVAL_RESOLVED",
+        actorId: userId,
+        data: { approvalId, action: "APPROVED" },
+      });
+      this.realtime.emit(approval.workspaceId, {
+        type: approval.actionType === "DELETE" ? "TRANSACTION_DELETED" : "TRANSACTION_UPDATED",
+        actorId: userId,
+        data: { id: approval.transactionId },
+      });
+
       const updated = await this.approvals.findById(approvalId);
       return {
         message: `Pengajuan ${approval.actionType === "UPDATE" ? "perubahan" : "penghapusan"} transaksi telah disetujui`,
@@ -561,6 +639,12 @@ export class TransactionService {
         "REJECTED",
         approval.requesterId,
       );
+
+      this.realtime.emit(approval.workspaceId, {
+        type: "APPROVAL_RESOLVED",
+        actorId: userId,
+        data: { approvalId, action: "REJECTED" },
+      });
 
       const updated = await this.approvals.findById(approvalId);
       return {

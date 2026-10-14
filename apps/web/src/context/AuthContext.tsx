@@ -23,6 +23,7 @@ export interface WorkspaceInfo {
   name: string;
   inviteCode: string;
   datePolicy?: "STRICT_TODAY" | "FLEXIBLE";
+  theme?: string;
   role: string;
   createdAt: string;
   members: WorkspaceMember[];
@@ -81,6 +82,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     void fetchCurrentUser();
+
+    const handleFocus = () => {
+      // Re-fetch saat tab/aplikasi dibuka kembali untuk sinkronisasi antar pasangan
+      void fetchCurrentUser();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    // Polling halus setiap 15 detik jika user sedang aktif
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        void fetchCurrentUser();
+      }
+    }, 15000);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(interval);
+    };
   }, []);
 
   const login = async (input: LoginInput) => {

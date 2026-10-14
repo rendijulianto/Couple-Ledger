@@ -8,13 +8,13 @@ COPY packages/shared/package.json ./packages/shared/
 COPY apps/api/package.json ./apps/api/
 COPY apps/web/package.json ./apps/web/
 
-# Install dependencies in workspace
-RUN bun install
-
 # Copy source code needed for types and build
 COPY packages/shared ./packages/shared
 COPY apps/api ./apps/api
 COPY apps/web ./apps/web
+
+# Ensure clean node_modules and install in Linux container
+RUN rm -rf node_modules apps/*/node_modules packages/*/node_modules && bun install
 
 WORKDIR /app/apps/web
 

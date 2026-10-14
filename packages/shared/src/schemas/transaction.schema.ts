@@ -3,6 +3,8 @@ import { Type, type Static } from "@sinclair/typebox";
 export const CreateTransactionInputSchema = Type.Object({
   workspaceId: Type.String(),
   categoryId: Type.String(),
+  subcategoryId: Type.Optional(Type.String()),
+  subcategoryName: Type.Optional(Type.String({ maxLength: 100 })),
   walletId: Type.Optional(Type.String()),
   type: Type.Union([Type.Literal("EXPENSE"), Type.Literal("INCOME")]),
   amountIdr: Type.Integer({ minimum: 1 }),
@@ -16,6 +18,8 @@ export type CreateTransactionInput = Static<
 
 export const UpdateTransactionInputSchema = Type.Object({
   categoryId: Type.Optional(Type.String()),
+  subcategoryId: Type.Optional(Type.String()),
+  subcategoryName: Type.Optional(Type.String({ maxLength: 100 })),
   walletId: Type.Optional(Type.String()),
   type: Type.Optional(
     Type.Union([Type.Literal("EXPENSE"), Type.Literal("INCOME")]),

@@ -8,6 +8,7 @@ import { memberRepository } from "../repositories/drizzle/member.repository";
 import { auditLogRepository } from "../repositories/drizzle/audit.repository";
 import { userRepository } from "../repositories/drizzle/user.repository";
 import { notifierService, NotifierService } from "./notifier.service";
+import { realtimeService, RealtimeService } from "./realtime.service";
 import {
   NotFoundError,
   ConflictError,
@@ -27,6 +28,7 @@ export class WorkspaceService {
     private readonly users: IUserRepository = userRepository,
     private readonly audit: IAuditLogRepository = auditLogRepository,
     private readonly notifier: NotifierService = notifierService,
+    private readonly realtime: RealtimeService = realtimeService,
   ) {}
 
   async createWorkspace(
@@ -171,6 +173,17 @@ export class WorkspaceService {
     };
   }
 
+  async ensureMembership(workspaceId: string, userId: string): Promise<Member> {
+    const member = await this.members.findByWorkspaceAndUser(
+      workspaceId,
+      userId,
+    );
+    if (!member) {
+      throw new ForbiddenError("Anda bukan anggota ruang ini");
+    }
+    return member;
+  }
+
   async updateDatePolicy(
     userId: string,
     workspaceId: string,
@@ -252,6 +265,12 @@ export class WorkspaceService {
         );
       }
 
+      this.realtime.emit(workspaceId, {
+        type: "APPROVAL_REQUESTED",
+        actorId: userId,
+        data: { policyType: "DATE_POLICY", targetValue: targetPolicy },
+      });
+
       return {
         pendingApproval: true,
         approvalId: approval.id,
@@ -278,11 +297,76 @@ export class WorkspaceService {
       requestId: meta?.requestId,
     });
 
+    this.realtime.emit(workspaceId, {
+      type: "DATE_POLICY_CHANGED",
+      actorId: userId,
+      data: { datePolicy: targetPolicy },
+    });
+
     return {
       pendingApproval: false,
       message: "Kebijakan tanggal pencatatan berhasil diubah",
       data: updated,
     };
+  }
+
+  async updateTheme(
+    userId: string,
+    workspaceId: string,
+    theme: string,
+    meta?: RequestMeta,
+  ): Promise<Workspace> {
+    const member = await this.members.findByWorkspaceAndUser(
+      workspaceId,
+      userId,
+    );
+    if (!member) {
+      throw new ForbiddenError("Anda bukan anggota ruang ini");
+    }
+
+    const workspace = await this.workspaces.findById(workspaceId);
+    if (!workspace) {
+      throw new NotFoundError("Ruang tidak ditemukan");
+    }
+
+    const validThemes = [
+      "rausch",
+      "rose",
+      "emerald",
+      "ocean",
+      "violet",
+      "amber",
+      "slate",
+    ];
+    const targetTheme = theme.toLowerCase().trim();
+    if (!validThemes.includes(targetTheme)) {
+      throw new ConflictError("Tema warna tidak valid");
+    }
+
+    const updated = await this.workspaces.update(workspaceId, {
+      theme: targetTheme,
+    });
+
+    await this.audit.record({
+      workspaceId,
+      actorId: userId,
+      action: "WORKSPACE_THEME_UPDATED",
+      entityType: "WORKSPACE",
+      entityId: workspaceId,
+      before: { theme: workspace.theme },
+      after: { theme: targetTheme },
+      ip: meta?.ip,
+      userAgent: meta?.userAgent,
+      requestId: meta?.requestId,
+    });
+
+    this.realtime.emit(workspaceId, {
+      type: "THEME_CHANGED",
+      actorId: userId,
+      data: { theme: targetTheme },
+    });
+
+    return updated;
   }
 
   async listPendingPolicyApprovals(
@@ -381,6 +465,17 @@ export class WorkspaceService {
         approval.targetValue,
       );
 
+      this.realtime.emit(approval.workspaceId, {
+        type: "APPROVAL_RESOLVED",
+        actorId: userId,
+        data: { approvalId, action: "APPROVED" },
+      });
+      this.realtime.emit(approval.workspaceId, {
+        type: "DATE_POLICY_CHANGED",
+        actorId: userId,
+        data: { datePolicy: approval.targetValue },
+      });
+
       const updated = await this.workspaces.findPolicyApprovalById(approvalId);
       return {
         message: `Perubahan kebijakan tanggal pencatatan telah disetujui`,
@@ -412,6 +507,12 @@ export class WorkspaceService {
         approval.requesterId,
         approval.targetValue,
       );
+
+      this.realtime.emit(approval.workspaceId, {
+        type: "APPROVAL_RESOLVED",
+        actorId: userId,
+        data: { approvalId, action: "REJECTED" },
+      });
 
       const updated = await this.workspaces.findPolicyApprovalById(approvalId);
       return {

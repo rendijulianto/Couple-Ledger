@@ -29,12 +29,21 @@ export const WorkspaceResponseSchema = Type.Object({
     Type.Literal("STRICT_TODAY"),
     Type.Literal("FLEXIBLE"),
   ]),
+  theme: Type.Optional(Type.String()),
   role: Type.String(),
   createdAt: Type.String(),
   members: Type.Array(WorkspaceMemberResponseSchema),
 });
 
 export type WorkspaceResponse = Static<typeof WorkspaceResponseSchema>;
+
+export const UpdateWorkspaceThemeInputSchema = Type.Object({
+  theme: Type.String({ minLength: 2, maxLength: 32 }),
+});
+
+export type UpdateWorkspaceThemeInput = Static<
+  typeof UpdateWorkspaceThemeInputSchema
+>;
 
 export const UpdateWorkspaceDatePolicyInputSchema = Type.Object({
   datePolicy: Type.Union([

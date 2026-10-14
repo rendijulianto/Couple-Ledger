@@ -29,6 +29,9 @@ export const transactions = pgTable(
     categoryId: uuid("category_id")
       .notNull()
       .references(() => categories.id, { onDelete: "restrict" }),
+    subcategoryId: uuid("subcategory_id").references(() => categories.id, {
+      onDelete: "set null",
+    }),
     type: varchar("type", { length: 20 }).notNull(), // 'EXPENSE' | 'INCOME'
     amountIdr: integer("amount_idr").notNull(), // Integer Rupiah without decimals
     note: text("note"),
@@ -52,6 +55,7 @@ export const transactions = pgTable(
       table.occurredOn,
     ),
     index("transactions_created_by_idx").on(table.createdById),
+    index("transactions_subcategory_idx").on(table.subcategoryId),
   ],
 );
 

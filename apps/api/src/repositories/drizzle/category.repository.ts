@@ -1,4 +1,4 @@
-import { eq, or, isNull, and } from "drizzle-orm";
+import { eq, or, isNull, and, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { categories, type Category, type NewCategory } from "../../db/schema";
 import type { ICategoryRepository } from "../interfaces/category.repository.interface";
@@ -103,6 +103,75 @@ export class DrizzleCategoryRepository implements ICategoryRepository {
       .update(categories)
       .set({ isArchived: true, updatedAt: new Date() })
       .where(eq(categories.id, id));
+  }
+
+  async findSubcategoryByName(
+    workspaceId: string,
+    parentId: string,
+    name: string,
+  ): Promise<Category | null> {
+    const cleanName = name.trim();
+    if (!cleanName) return null;
+
+    const [result] = await db
+      .select()
+      .from(categories)
+      .where(
+        and(
+          eq(categories.workspaceId, workspaceId),
+          eq(categories.parentId, parentId),
+          sql`lower(${categories.name}) = lower(${cleanName})`,
+          eq(categories.isArchived, false),
+        ),
+      )
+      .limit(1);
+    return result ?? null;
+  }
+
+  async findOrCreateSubcategory(
+    workspaceId: string,
+    parentId: string,
+    name: string,
+  ): Promise<Category> {
+    const cleanName = name.trim();
+    if (!cleanName) {
+      throw new Error("Nama subkategori tidak boleh kosong");
+    }
+
+    const existing = await this.findSubcategoryByName(workspaceId, parentId, cleanName);
+    if (existing) {
+      return existing;
+    }
+
+    // Ambil kategori induk untuk mewarisi tipe & tema visual
+    const parent = await this.findById(parentId);
+    if (!parent) {
+      throw new Error("Kategori induk tidak ditemukan");
+    }
+
+    try {
+      const [created] = await db
+        .insert(categories)
+        .values({
+          workspaceId,
+          parentId,
+          name: cleanName,
+          type: parent.type,
+          icon: parent.icon,
+          color: parent.color,
+          isArchived: false,
+        })
+        .returning();
+
+      return created!;
+    } catch {
+      // Jika terjadi race condition (insert bersamaan oleh pasangan), gunakan yang berhasil tersimpan
+      const raceExisting = await this.findSubcategoryByName(workspaceId, parentId, cleanName);
+      if (raceExisting) {
+        return raceExisting;
+      }
+      throw new Error("Gagal membuat subkategori");
+    }
   }
 }
 

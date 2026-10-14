@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useAuth } from "./AuthContext";
+import { api } from "../lib/api";
 
 export interface ThemeOption {
   id: string;
@@ -96,8 +98,9 @@ const STORAGE_KEY = "couple_ledger_theme";
 
 interface ThemeContextType {
   currentTheme: ThemeOption;
-  setThemeId: (id: string) => void;
+  setThemeId: (id: string) => Promise<void>;
   availableThemes: ThemeOption[];
+  isSyncingTheme: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -130,6 +133,17 @@ try {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  let activeWorkspace: { id: string; theme?: string } | null = null;
+  let refreshAuth: () => Promise<void> = async () => {};
+
+  try {
+    const auth = useAuth();
+    activeWorkspace = auth.activeWorkspace;
+    refreshAuth = auth.refreshAuth;
+  } catch {
+    // ThemeProvider used outside AuthProvider fallback
+  }
+
   const [themeId, setThemeIdState] = useState<string>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -141,6 +155,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
     return "rausch";
   });
+
+  const [isSyncingTheme, setIsSyncingTheme] = useState(false);
+
+  // Sinkronkan tema otomatis ketika data ruang aktif diperbarui (misal pasangan baru saja mengubah tema)
+  useEffect(() => {
+    if (
+      activeWorkspace?.theme &&
+      THEME_PRESETS.some((t) => t.id === activeWorkspace.theme) &&
+      activeWorkspace.theme !== themeId
+    ) {
+      setThemeIdState(activeWorkspace.theme);
+    }
+  }, [activeWorkspace?.theme]);
 
   const currentTheme =
     THEME_PRESETS.find((t) => t.id === themeId) ?? THEME_PRESETS[0]!;
@@ -154,9 +181,25 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentTheme]);
 
-  const setThemeId = (newId: string) => {
-    if (THEME_PRESETS.some((t) => t.id === newId)) {
-      setThemeIdState(newId);
+  const setThemeId = async (newId: string) => {
+    if (!THEME_PRESETS.some((t) => t.id === newId)) return;
+
+    // Terapkan langsung ke UI agar pengguna merasakan respons instan
+    setThemeIdState(newId);
+
+    // Sinkronkan ke database ruang bersama agar pasangan ikut berubah
+    if (activeWorkspace?.id) {
+      setIsSyncingTheme(true);
+      try {
+        await api.workspaces({ id: activeWorkspace.id }).theme.patch({
+          theme: newId,
+        });
+        await refreshAuth();
+      } catch {
+        // Fallback anggun jika server offline/error
+      } finally {
+        setIsSyncingTheme(false);
+      }
     }
   };
 
@@ -166,6 +209,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         currentTheme,
         setThemeId,
         availableThemes: THEME_PRESETS,
+        isSyncingTheme,
       }}
     >
       {children}

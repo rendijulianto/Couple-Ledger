@@ -16,7 +16,7 @@ export const getRequestMeta = (request: Request): RequestMeta => {
 
 export const authGuard = new Elysia({ name: "auth-guard" }).derive(
   { as: "scoped" },
-  async ({ cookie, headers }): Promise<{ user: User }> => {
+  async ({ cookie, headers, query }): Promise<{ user: User }> => {
     // 1. Check httpOnly cookie session_id
     let token = cookie.session_id?.value;
 
@@ -25,6 +25,14 @@ export const authGuard = new Elysia({ name: "auth-guard" }).derive(
       const authHeader = headers["authorization"];
       if (authHeader && authHeader.startsWith("Bearer ")) {
         token = authHeader.substring(7);
+      }
+    }
+
+    // 3. Fallback to query parameter ?token= (essential for native browser EventSource)
+    if (!token && query && typeof query === "object" && "token" in query) {
+      const qToken = (query as Record<string, unknown>).token;
+      if (typeof qToken === "string") {
+        token = qToken;
       }
     }
 

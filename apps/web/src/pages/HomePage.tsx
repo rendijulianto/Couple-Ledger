@@ -12,6 +12,8 @@ import {
   X,
   Wallet,
   Loader2,
+  Heart,
+  User,
 } from "lucide-react";
 import { formatRupiah } from "@couple-ledger/shared";
 import { useAuth } from "../context/AuthContext";
@@ -32,6 +34,7 @@ interface TransactionItem {
   note?: string | null;
   occurredOn: string | Date;
   category: { id: string; name: string; icon: string; color: string };
+  subcategory?: { id: string; name: string } | null;
   wallet?: { id: string; name: string; type: string } | null;
   createdBy: { id: string; name: string; email: string };
   pendingApproval?: {
@@ -444,7 +447,8 @@ export function HomePage({
               <input
                 type="number"
                 min="0"
-                step="50000"
+                step="1"
+                inputMode="numeric"
                 value={budgetInput}
                 onChange={(e) => setBudgetInput(Number(e.target.value) || 0)}
                 className="flex-1 text-xs px-2.5 py-1.5 bg-canvas border border-hairline rounded-sm focus:outline-none focus:border-ink font-semibold"
@@ -586,9 +590,11 @@ export function HomePage({
                   className={`border rounded-sm p-3 flex items-center justify-between shadow-2xs transition-all ${
                     hasPending
                       ? isPendingDelete
-                        ? "bg-rose-50/40 border-rose-200/90"
-                        : "bg-blue-50/40 border-blue-200/90"
-                      : "bg-canvas border border-hairline hover:border-hairline-strong"
+                        ? "bg-rose-50/40 border-rose-200/90 border-l-[3.5px] border-l-rose-500"
+                        : "bg-blue-50/40 border-blue-200/90 border-l-[3.5px] border-l-blue-500"
+                      : isMine
+                        ? "bg-canvas border-hairline hover:border-hairline-strong border-l-[3.5px] border-l-transparent"
+                        : "bg-gradient-to-r from-rausch/[0.05] to-canvas border-hairline hover:border-rausch/30 border-l-[3.5px] border-l-rausch"
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -600,11 +606,26 @@ export function HomePage({
                       size="md"
                     />
 
-                    <div className="min-w-0">
+                    <div className="min-w-0 space-y-0.5">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-xs font-semibold text-ink truncate">
                           {t.category.name}
+                          {t.subcategory?.name ? ` • ${t.subcategory.name}` : ""}
                         </span>
+
+                        {/* Author Indicator Pill Badge */}
+                        {isMine ? (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[10px] font-medium bg-surface-strong text-ink-muted border border-hairline-soft shrink-0">
+                            <User className="w-2.5 h-2.5 text-ink-muted" />
+                            <span>Kamu</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rausch/10 text-rausch border border-rausch/20 shrink-0 shadow-2xs">
+                            <Heart className="w-2.5 h-2.5 fill-rausch text-rausch" />
+                            <span>{t.createdBy.name}</span>
+                          </span>
+                        )}
+
                         {/* Status Badges */}
                         {isPendingDelete && (
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
@@ -619,11 +640,10 @@ export function HomePage({
                           </span>
                         )}
                       </div>
+
                       <div className="text-[11px] text-ink-muted truncate">
-                        {t.note || "Tanpa catatan"} •{" "}
-                        <span className="font-medium text-ink">
-                          {isMine ? "Kamu" : t.createdBy.name}
-                        </span>
+                        {t.note || "Tanpa catatan"}
+                        {t.wallet ? <span> • {t.wallet.name}</span> : ""}
                       </div>
                     </div>
                   </div>

@@ -101,6 +101,7 @@ describe("Notifier Engine Rules & Quiet Hours", () => {
       workspaceId: "ws_1",
       createdById: "author_id",
       categoryId: "cat_1",
+      subcategoryId: null,
       walletId: null,
       type: "EXPENSE",
       amountIdr: 50000,
@@ -112,6 +113,7 @@ describe("Notifier Engine Rules & Quiet Hours", () => {
       category: {
         id: "cat_1",
         workspaceId: null,
+        parentId: null,
         name: "Makan & Minum",
         type: "EXPENSE",
         icon: "utensils",
@@ -120,6 +122,7 @@ describe("Notifier Engine Rules & Quiet Hours", () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
+      subcategory: null,
       wallet: null,
       createdBy: dummyAuthor,
     };

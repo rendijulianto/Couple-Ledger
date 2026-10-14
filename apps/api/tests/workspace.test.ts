@@ -168,5 +168,79 @@ describe("Workspace API Endpoints & 2-Member Enforcement", () => {
     expect(body.data.length).toBeGreaterThanOrEqual(1);
     expect(body.data.some((l) => l.action === "WORKSPACE_CREATED")).toBe(true);
   });
+
+  it("PATCH /workspaces/:id/theme updates room theme and syncs with partner", async () => {
+    // Partner (User 2) updates theme to 'ocean'
+    const res = await app.handle(
+      new Request(`http://localhost:3000/workspaces/${createdWorkspaceId}/theme`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token2}`,
+        },
+        body: JSON.stringify({ theme: "ocean" }),
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      success: boolean;
+      data: { theme: string };
+    };
+    expect(body.success).toBe(true);
+    expect(body.data.theme).toBe("ocean");
+
+    // Owner (User 1) fetches /auth/me and receives updated theme 'ocean'
+    const meRes = await app.handle(
+      new Request("http://localhost:3000/auth/me", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token1}`,
+        },
+      }),
+    );
+    expect(meRes.status).toBe(200);
+    const meBody = (await meRes.json()) as {
+      success: boolean;
+      data: { workspaces: Array<{ id: string; theme: string }> };
+    };
+    const targetWs = meBody.data.workspaces.find((w) => w.id === createdWorkspaceId);
+    expect(targetWs?.theme).toBe("ocean");
+
+    // Check audit log for WORKSPACE_THEME_UPDATED
+    const auditRes = await app.handle(
+      new Request(`http://localhost:3000/workspaces/${createdWorkspaceId}/audit-logs`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token1}`,
+        },
+      }),
+    );
+    const auditBody = (await auditRes.json()) as {
+      data: Array<{ action: string }>;
+    };
+    expect(auditBody.data.some((l) => l.action === "WORKSPACE_THEME_UPDATED")).toBe(true);
+  });
+
+  it("GET /workspaces/:id/events connects to SSE stream and receives live events", async () => {
+    const sseRes = await app.handle(
+      new Request(
+        `http://localhost:3000/workspaces/${createdWorkspaceId}/events?token=${token1}`,
+        {
+          method: "GET",
+        },
+      ),
+    );
+
+    expect(sseRes.status).toBe(200);
+    expect(sseRes.headers.get("content-type")).toContain("text/event-stream");
+    expect(sseRes.body).toBeDefined();
+
+    const reader = sseRes.body!.getReader();
+    const firstChunk = await reader.read();
+    const text = new TextDecoder().decode(firstChunk.value);
+    expect(text).toContain(": connected");
+    await reader.cancel();
+  });
 });
 

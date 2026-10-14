@@ -74,6 +74,14 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
     fields: [categories.workspaceId],
     references: [workspaces.id],
   }),
+  parent: one(categories, {
+    fields: [categories.parentId],
+    references: [categories.id],
+    relationName: "category_subcategories",
+  }),
+  subcategories: many(categories, {
+    relationName: "category_subcategories",
+  }),
   transactions: many(transactions),
   budgets: many(budgets),
 }));
@@ -94,6 +102,12 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
   category: one(categories, {
     fields: [transactions.categoryId],
     references: [categories.id],
+    relationName: "transaction_category",
+  }),
+  subcategory: one(categories, {
+    fields: [transactions.subcategoryId],
+    references: [categories.id],
+    relationName: "transaction_subcategory",
   }),
 }));
 

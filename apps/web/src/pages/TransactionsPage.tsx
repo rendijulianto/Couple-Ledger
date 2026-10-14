@@ -10,6 +10,10 @@ import {
   Loader2,
   RotateCcw,
   Clock,
+  Heart,
+  User,
+  Plus,
+  Check,
 } from "lucide-react";
 import { formatRupiah } from "@couple-ledger/shared";
 import { useAuth } from "../context/AuthContext";
@@ -25,6 +29,7 @@ interface TransactionItem {
   note?: string | null;
   occurredOn: string | Date;
   category: { id: string; name: string; icon: string; color: string };
+  subcategory?: { id: string; name: string } | null;
   wallet?: { id: string; name: string; type: string } | null;
   createdBy: { id: string; name: string; email: string };
   pendingApproval?: {
@@ -41,6 +46,7 @@ interface CategoryItem {
   type: "EXPENSE" | "INCOME";
   icon?: string;
   color?: string;
+  parentId?: string | null;
 }
 
 interface WalletItem {
@@ -79,6 +85,9 @@ export function TransactionsPage() {
   const [editNote, setEditNote] = useState<string>("");
   const [editOccurredOn, setEditOccurredOn] = useState<string>("");
   const [editCategoryId, setEditCategoryId] = useState<string>("");
+  const [editSubcategoryId, setEditSubcategoryId] = useState<string | null>(null);
+  const [editCustomSubName, setEditCustomSubName] = useState<string>("");
+  const [isAddingEditCustomSub, setIsAddingEditCustomSub] = useState<boolean>(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const isSavingEditRef = useRef(false);
 
@@ -241,6 +250,9 @@ export function TransactionsPage() {
     setEditNote(tx.note || "");
     setEditOccurredOn(getOccurredOnStr(tx.occurredOn));
     setEditCategoryId(tx.category.id);
+    setEditSubcategoryId(tx.subcategory?.id ?? null);
+    setEditCustomSubName("");
+    setIsAddingEditCustomSub(false);
   };
 
   const handleSaveEdit = async () => {
@@ -276,6 +288,8 @@ export function TransactionsPage() {
         type: editType,
         note: editNote.trim(),
         categoryId: editCategoryId,
+        subcategoryId: editSubcategoryId || undefined,
+        subcategoryName: editCustomSubName.trim() || undefined,
       });
 
       if (res.data?.success) {
@@ -495,11 +509,13 @@ export function TransactionsPage() {
               }`}
             >
               <option value="ALL">Semua Kategori</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
+              {categories
+                .filter((c) => !c.parentId)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
             </select>
           </div>
 
@@ -611,9 +627,11 @@ export function TransactionsPage() {
                         className={`border rounded-sm p-3 flex items-center justify-between shadow-2xs transition-all ${
                           hasPending
                             ? isPendingDelete
-                              ? "bg-rose-50/40 border-rose-200/90"
-                              : "bg-blue-50/40 border-blue-200/90"
-                            : "bg-canvas border border-hairline hover:border-hairline-strong"
+                              ? "bg-rose-50/40 border-rose-200/90 border-l-[3.5px] border-l-rose-500"
+                              : "bg-blue-50/40 border-blue-200/90 border-l-[3.5px] border-l-blue-500"
+                            : isMine
+                              ? "bg-canvas border-hairline hover:border-hairline-strong border-l-[3.5px] border-l-transparent"
+                              : "bg-gradient-to-r from-rausch/[0.05] to-canvas border-hairline hover:border-rausch/30 border-l-[3.5px] border-l-rausch"
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
@@ -624,11 +642,27 @@ export function TransactionsPage() {
                             size="md"
                           />
 
-                          <div className="min-w-0">
+                          <div className="min-w-0 space-y-0.5">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-xs font-semibold text-ink truncate">
                                 {t.category.name}
+                                {t.subcategory?.name ? ` • ${t.subcategory.name}` : ""}
                               </span>
+
+                              {/* Author Indicator Pill Badge */}
+                              {isMine ? (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[10px] font-medium bg-surface-strong text-ink-muted border border-hairline-soft shrink-0">
+                                  <User className="w-2.5 h-2.5 text-ink-muted" />
+                                  <span>Kamu</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rausch/10 text-rausch border border-rausch/20 shrink-0 shadow-2xs">
+                                  <Heart className="w-2.5 h-2.5 fill-rausch text-rausch" />
+                                  <span>{t.createdBy.name}</span>
+                                </span>
+                              )}
+
+                              {/* Status Badges */}
                               {isPendingDelete && (
                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
                                   <Clock className="w-2.5 h-2.5 animate-pulse text-rose-600" />
@@ -642,12 +676,10 @@ export function TransactionsPage() {
                                 </span>
                               )}
                             </div>
+
                             <div className="text-[11px] text-ink-muted truncate">
-                              {t.note || "Tanpa catatan"} •{" "}
-                              <span className="font-medium text-ink">
-                                {isMine ? "Kamu" : t.createdBy.name}
-                              </span>
-                              {t.wallet ? ` • ${t.wallet.name}` : ""}
+                              {t.note || "Tanpa catatan"}
+                              {t.wallet ? <span> • {t.wallet.name}</span> : ""}
                             </div>
                           </div>
                         </div>
@@ -745,7 +777,10 @@ export function TransactionsPage() {
                   type="button"
                   onClick={() => {
                     setEditType("EXPENSE");
-                    const firstExpense = categories.find((c) => c.type === "EXPENSE");
+                    setEditSubcategoryId(null);
+                    setEditCustomSubName("");
+                    setIsAddingEditCustomSub(false);
+                    const firstExpense = categories.find((c) => c.type === "EXPENSE" && !c.parentId);
                     if (firstExpense) setEditCategoryId(firstExpense.id);
                   }}
                   className={`py-2 text-xs font-bold rounded-lg transition-all ${
@@ -760,7 +795,10 @@ export function TransactionsPage() {
                   type="button"
                   onClick={() => {
                     setEditType("INCOME");
-                    const firstIncome = categories.find((c) => c.type === "INCOME");
+                    setEditSubcategoryId(null);
+                    setEditCustomSubName("");
+                    setIsAddingEditCustomSub(false);
+                    const firstIncome = categories.find((c) => c.type === "INCOME" && !c.parentId);
                     if (firstIncome) setEditCategoryId(firstIncome.id);
                   }}
                   className={`py-2 text-xs font-bold rounded-lg transition-all ${
@@ -774,13 +812,20 @@ export function TransactionsPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-ink-muted">
-                  Nominal (Rp)
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-semibold text-ink-muted">
+                    Nominal (Rp)
+                  </label>
+                  <span className="text-xs font-bold text-ink">
+                    {formatRupiah(editAmount)}
+                  </span>
+                </div>
                 <input
                   type="number"
                   min="1"
-                  value={editAmount}
+                  step="1"
+                  inputMode="numeric"
+                  value={editAmount === 0 ? "" : editAmount}
                   onChange={(e) => setEditAmount(Number(e.target.value) || 0)}
                   className="w-full text-base font-bold text-ink px-3 py-2 bg-surface-soft border border-hairline rounded-sm"
                 />
@@ -804,11 +849,16 @@ export function TransactionsPage() {
                   })()}
                   <select
                     value={editCategoryId}
-                    onChange={(e) => setEditCategoryId(e.target.value)}
+                    onChange={(e) => {
+                      setEditCategoryId(e.target.value);
+                      setEditSubcategoryId(null);
+                      setEditCustomSubName("");
+                      setIsAddingEditCustomSub(false);
+                    }}
                     className="flex-1 text-xs text-ink p-2 bg-surface-soft border border-hairline rounded-sm focus:outline-none focus:border-ink font-medium"
                   >
                     {categories
-                      .filter((c) => c.type === editType)
+                      .filter((c) => c.type === editType && !c.parentId)
                       .map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.name}
@@ -817,6 +867,119 @@ export function TransactionsPage() {
                   </select>
                 </div>
               </div>
+
+              {/* Sub-Kategori in Edit Modal */}
+              {editCategoryId && (
+                <div className="space-y-1.5 pt-0.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-semibold text-ink-muted flex items-center gap-1.5">
+                      <span>Sub-Kategori</span>
+                      <span className="text-[10px] font-normal text-ink-muted/80">
+                        (opsional)
+                      </span>
+                    </label>
+                    {(editSubcategoryId || editCustomSubName.trim()) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditSubcategoryId(null);
+                          setEditCustomSubName("");
+                          setIsAddingEditCustomSub(false);
+                        }}
+                        className="text-[10px] text-rausch hover:underline font-semibold"
+                      >
+                        Hapus Sub
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 items-center">
+                    {categories
+                      .filter((c) => c.parentId === editCategoryId)
+                      .map((sub) => {
+                        const isSelected = editSubcategoryId === sub.id;
+                        return (
+                          <button
+                            key={sub.id}
+                            type="button"
+                            onClick={() => {
+                              if (isSelected) {
+                                setEditSubcategoryId(null);
+                              } else {
+                                setEditSubcategoryId(sub.id);
+                                setEditCustomSubName("");
+                                setIsAddingEditCustomSub(false);
+                              }
+                            }}
+                            className={`px-2.5 py-1 text-xs rounded-full border transition-all active:scale-95 flex items-center gap-1 ${
+                              isSelected
+                                ? "bg-rausch text-white border-rausch font-bold shadow-xs"
+                                : "bg-surface-soft hover:bg-surface-strong text-ink border-hairline font-medium"
+                            }`}
+                          >
+                            {isSelected && <Check className="w-3 h-3 stroke-[2.5]" />}
+                            <span>{sub.name}</span>
+                          </button>
+                        );
+                      })}
+
+                    {isAddingEditCustomSub ? (
+                      <div className="flex items-center gap-1 bg-surface-soft border border-ink/40 rounded-full pl-2.5 pr-1 py-0.5 animate-in fade-in">
+                        <input
+                          type="text"
+                          autoFocus
+                          value={editCustomSubName}
+                          onChange={(e) => {
+                            setEditCustomSubName(e.target.value);
+                            if (editSubcategoryId) setEditSubcategoryId(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              if (editCustomSubName.trim()) {
+                                setIsAddingEditCustomSub(false);
+                              }
+                            }
+                          }}
+                          placeholder="Ketik sub baru..."
+                          maxLength={50}
+                          className="text-xs text-ink bg-transparent focus:outline-none w-28 sm:w-36 font-semibold"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!editCustomSubName.trim()) {
+                              setIsAddingEditCustomSub(false);
+                            }
+                          }}
+                          className="p-1 rounded-full text-ink-muted hover:text-ink hover:bg-surface-strong"
+                          aria-label="Tutup sub baru"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingEditCustomSub(true);
+                          setEditSubcategoryId(null);
+                        }}
+                        className={`px-2.5 py-1 text-xs rounded-full border border-dashed transition-all active:scale-95 flex items-center gap-1 ${
+                          editCustomSubName.trim()
+                            ? "bg-rausch/10 border-rausch text-rausch font-bold"
+                            : "border-hairline-strong text-ink-muted hover:text-ink hover:bg-surface-soft font-medium"
+                        }`}
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>
+                          {editCustomSubName.trim() ? editCustomSubName : "+ Sub Baru"}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Tanggal Terkunci (Readonly demi integritas audit bersama) */}
               <div className="space-y-1">

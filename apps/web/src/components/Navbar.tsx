@@ -1,8 +1,10 @@
 import { Heart, Users } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useRealtime } from "../context/RealtimeContext";
 
 export function Navbar() {
   const { user, activeWorkspace } = useAuth();
+  const { isConnected } = useRealtime();
 
   const partner = activeWorkspace?.members.find((m) => m.userId !== user?.id);
 
@@ -16,7 +18,18 @@ export function Navbar() {
           <h1 className="font-bold text-sm tracking-tight text-ink leading-tight flex items-center gap-1.5">
             {activeWorkspace?.name || "Couple Ledger"}
           </h1>
-          <p className="text-[11px] text-ink-muted">Catatan Harian Berdua</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-[11px] text-ink-muted">Catatan Harian Berdua</p>
+            {isConnected && (
+              <span
+                title="Tersambung Real-Time Berdua"
+                className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-1.5 py-0.5 rounded-full"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Live
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

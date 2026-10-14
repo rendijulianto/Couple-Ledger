@@ -5,6 +5,7 @@ import {
   boolean,
   timestamp,
   index,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { workspaces } from "./workspaces";
 
@@ -13,6 +14,9 @@ export const categories = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     workspaceId: uuid("workspace_id").references(() => workspaces.id, {
+      onDelete: "cascade",
+    }),
+    parentId: uuid("parent_id").references((): AnyPgColumn => categories.id, {
       onDelete: "cascade",
     }),
     name: varchar("name", { length: 100 }).notNull(),
@@ -30,6 +34,7 @@ export const categories = pgTable(
   (table) => [
     index("categories_workspace_id_idx").on(table.workspaceId),
     index("categories_type_idx").on(table.type),
+    index("categories_parent_id_idx").on(table.parentId),
   ],
 );
 
