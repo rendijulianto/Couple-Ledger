@@ -75,6 +75,12 @@ export function HomePage({
   const [selectedMonth, setSelectedMonth] = useState<string>(currentYearMonth);
 
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
+  const [monthlySummary, setMonthlySummary] = useState<{
+    totalIncomeIdr: number;
+    totalExpenseIdr: number;
+    netBalanceIdr: number;
+    transactionCount: number;
+  }>({ totalIncomeIdr: 0, totalExpenseIdr: 0, netBalanceIdr: 0, transactionCount: 0 });
   const [budgetStatus, setBudgetStatus] = useState<BudgetStatus | null>(null);
   const [wallets, setWallets] = useState<WalletItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -124,7 +130,7 @@ export function HomePage({
       }
 
       try {
-        const [txRes, budgetRes] = await Promise.all([
+        const [txRes, budgetRes, summaryRes] = await Promise.all([
           api.transactions.get({
             query: {
               workspaceId: activeWorkspace.id,
@@ -135,6 +141,14 @@ export function HomePage({
           }),
           isInitial
             ? api.budgets.get({
+                query: {
+                  workspaceId: activeWorkspace.id,
+                  month: selectedMonth,
+                },
+              })
+            : Promise.resolve(null),
+          isInitial
+            ? api.transactions.summary.get({
                 query: {
                   workspaceId: activeWorkspace.id,
                   month: selectedMonth,
@@ -161,6 +175,16 @@ export function HomePage({
           const b = budgetRes.data.data as BudgetStatus;
           setBudgetStatus(b);
           setBudgetInput(b.budgetAmountIdr);
+        }
+
+        if (summaryRes?.data?.success && summaryRes.data.data) {
+          const s = summaryRes.data.data as {
+            totalIncomeIdr: number;
+            totalExpenseIdr: number;
+            netBalanceIdr: number;
+            transactionCount: number;
+          };
+          setMonthlySummary(s);
         }
       } finally {
         setIsLoading(false);
@@ -291,6 +315,21 @@ export function HomePage({
             message: "Transaksi berhasil dihapus dari pembukuan bersama.",
           });
           setTransactions((prev) => prev.filter((t) => t.id !== id));
+          // Re-fetch summary to reflect the deletion in aggregated totals
+          if (activeWorkspace?.id) {
+            api.transactions.summary
+              .get({ query: { workspaceId: activeWorkspace.id, month: selectedMonth } })
+              .then((sumRes) => {
+                if (sumRes.data?.success && sumRes.data.data) {
+                  setMonthlySummary(sumRes.data.data as {
+                    totalIncomeIdr: number;
+                    totalExpenseIdr: number;
+                    netBalanceIdr: number;
+                    transactionCount: number;
+                  });
+                }
+              });
+          }
         }
       }
     } finally {
@@ -300,16 +339,10 @@ export function HomePage({
     }
   };
 
-  // Calculations for current month view
-  const totalExpense = transactions
-    .filter((t) => t.type === "EXPENSE")
-    .reduce((acc, t) => acc + t.amountIdr, 0);
-
-  const totalIncome = transactions
-    .filter((t) => t.type === "INCOME")
-    .reduce((acc, t) => acc + t.amountIdr, 0);
-
-  const netBalance = totalIncome - totalExpense;
+  // Server-side aggregated monthly totals (NOT derived from paginated transactions)
+  const totalExpense = monthlySummary.totalExpenseIdr;
+  const totalIncome = monthlySummary.totalIncomeIdr;
+  const netBalance = monthlySummary.netBalanceIdr;
 
   const monthLabel = new Intl.DateTimeFormat("id-ID", {
     month: "long",

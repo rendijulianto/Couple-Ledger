@@ -16,12 +16,17 @@ import {
   Lock,
   Loader2,
   CheckCircle2,
+  Github,
+  Linkedin,
+  Instagram,
+  MessageCircle,
 } from "lucide-react";
 import { formatJakartaDateTime } from "@couple-ledger/shared";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useTheme } from "../context/ThemeContext";
 import { api } from "../lib/api";
+import { Link } from "../lib/router";
 
 interface AuditLogItem {
   id: string;
@@ -1090,8 +1095,104 @@ export function SettingsPage() {
         </div>
       )}
 
+      {/* Developer Information Card */}
+      <section className="bg-canvas border border-hairline rounded-md p-4 shadow-float space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img
+              src="https://github.com/rendijulianto.png?size=96"
+              alt="Foto Profil Rendi Julianto"
+              className="w-10 h-10 rounded-full object-cover border border-hairline shadow-xs shrink-0"
+              loading="lazy"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src =
+                  "https://ui-avatars.com/api/?name=Rendi+Julianto&background=ff385c&color=ffffff";
+              }}
+            />
+            <div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-bold text-ink">Rendi Julianto</span>
+                <span className="text-[10px] px-1.5 py-0.2 bg-rausch/10 text-rausch rounded font-semibold">
+                  Creator
+                </span>
+                <span className="text-[9px] px-1.5 py-0.2 bg-emerald-100 text-emerald-800 rounded-full font-bold">
+                  Open Freelance
+                </span>
+              </div>
+              <p className="text-[10px] text-ink-muted">
+                Pengembang Couple Ledger (Cash-book.my.id)
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href="/tentang"
+            className="text-[11px] font-semibold text-rausch hover:underline flex items-center gap-1"
+          >
+            <span>Profil</span>
+            <ExternalLink className="w-3 h-3" />
+          </Link>
+        </div>
+
+        {/* Open Freelance Callout */}
+        <div className="p-2.5 rounded-lg bg-emerald-50/70 border border-emerald-200/80 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-emerald-900">
+              Butuh Pembuatan Aplikasi Apapun? 🚀
+            </span>
+            <span className="text-[10px] text-emerald-700 font-medium">Open Project</span>
+          </div>
+          <p className="text-[10px] text-emerald-800 leading-relaxed">
+            Siap bantu kembangkan aplikasi web, mobile, sistem kasir, atau bot otomatisasi.
+          </p>
+          <a
+            href="https://wa.me/6282129632854?text=Halo%20Rendi,%20saya%20tertarik%20konsultasi%20pembuatan%20aplikasi."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
+          >
+            <MessageCircle className="w-3.5 h-3.5 fill-white" />
+            <span>Hubungi WhatsApp: 082129632854</span>
+          </a>
+        </div>
+
+        <div className="flex items-center gap-2 pt-1 border-t border-hairline-soft">
+          <a
+            href="https://github.com/rendijulianto"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="GitHub Rendi Julianto"
+            className="flex-1 py-1.5 px-2 rounded-lg bg-surface-soft hover:bg-surface-strong border border-hairline text-ink text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
+          >
+            <Github className="w-3.5 h-3.5" />
+            <span>GitHub</span>
+          </a>
+          <a
+            href="https://linkedin.com/in/rendijulianto"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="LinkedIn Rendi Julianto"
+            className="flex-1 py-1.5 px-2 rounded-lg bg-surface-soft hover:bg-surface-strong border border-hairline text-ink text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
+          >
+            <Linkedin className="w-3.5 h-3.5 text-[#0077b5]" />
+            <span>LinkedIn</span>
+          </a>
+          <a
+            href="https://instagram.com/rendy.jul"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram Rendi Julianto"
+            className="flex-1 py-1.5 px-2 rounded-lg bg-surface-soft hover:bg-surface-strong border border-hairline text-ink text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
+          >
+            <Instagram className="w-3.5 h-3.5 text-[#e4405f]" />
+            <span>Instagram</span>
+          </a>
+        </div>
+      </section>
+
       {/* Logout Action Card */}
-      <section className="pt-2">
+      <section className="pt-1">
         <button
           type="button"
           onClick={() => void logout()}

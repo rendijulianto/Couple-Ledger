@@ -1,14 +1,19 @@
 import React, { useState } from "react";
-import { Heart, Lock, Mail, User, AlertCircle, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
+import { Heart, Lock, Mail, User, AlertCircle, ArrowRight, Sparkles, CheckCircle2, ArrowLeft } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { api } from "../lib/api";
+import { Link } from "../lib/router";
 
-export function AuthPage() {
+interface AuthPageProps {
+  initialMode?: "login" | "register";
+}
+
+export function AuthPage({ initialMode = "login" }: AuthPageProps) {
   const { user, workspaces, login, register, refreshAuth } = useAuth();
   const { showToast } = useToast();
 
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<"login" | "register">(initialMode);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -315,6 +320,17 @@ export function AuthPage() {
 
   return (
     <div className="min-h-screen bg-canvas text-ink flex flex-col justify-center px-4 py-8 max-w-md mx-auto">
+      {/* Back to Home Link */}
+      <div className="mb-2">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink font-semibold transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Kembali ke Beranda</span>
+        </Link>
+      </div>
+
       {/* Brand Header */}
       <div className="text-center space-y-2 mb-6">
         <div className="w-12 h-12 rounded-full bg-rausch flex items-center justify-center text-white shadow-sm mx-auto">
@@ -482,8 +498,21 @@ export function AuthPage() {
       </div>
 
       {/* Footer info */}
-      <footer className="mt-8 text-center text-[11px] text-ink-muted">
-        Couple Ledger • Catatan Harian Berdua dengan Telegram Bot
+      <footer className="mt-8 text-center text-[11px] text-ink-muted space-y-2">
+        <div>Couple Ledger • Catatan Harian Berdua dengan Telegram Bot</div>
+        <div className="flex justify-center gap-4 text-[11px]">
+          <Link href="/" className="hover:text-ink transition-colors">
+            Beranda
+          </Link>
+          <span>•</span>
+          <Link href="/kebijakan-privasi" className="hover:text-ink transition-colors">
+            Kebijakan Privasi
+          </Link>
+          <span>•</span>
+          <Link href="/syarat-ketentuan" className="hover:text-ink transition-colors">
+            Syarat &amp; Ketentuan
+          </Link>
+        </div>
       </footer>
     </div>
   );

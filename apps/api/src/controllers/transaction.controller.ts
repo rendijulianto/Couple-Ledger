@@ -69,6 +69,27 @@ export const transactionController = new Elysia({ prefix: "/transactions" })
     },
   )
   .get(
+    "/summary",
+    async ({ query, user }) => {
+      const summary = await transactionService.getMonthlySummary(
+        user.id,
+        query.workspaceId,
+        query.month,
+      );
+      return { success: true, data: summary };
+    },
+    {
+      query: t.Object({
+        workspaceId: t.String(),
+        month: t.String({ pattern: "^\\d{4}-\\d{2}$" }),
+      }),
+      detail: {
+        tags: ["Transaction"],
+        summary: "Ringkasan total pemasukan & pengeluaran bulanan (aggregasi server-side)",
+      },
+    },
+  )
+  .get(
     "/approvals",
     async ({ query, user }) => {
       const approvals = await transactionService.listPendingApprovals(

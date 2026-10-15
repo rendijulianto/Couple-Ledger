@@ -4,21 +4,235 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"
     />
     <meta name="theme-color" content="#ffffff" />
-    <meta name="description" content="Couple Ledger - Catatan Harian Berdua" />
-    <title>Couple Ledger</title>
+    
+    <!-- Primary SEO Metadata -->
+    <title>Cash-book.my.id — Catat Keuangan Bersama Pasangan dengan Lebih Transparan</title>
+    <meta
+      name="description"
+      content="Aplikasi catatan keuangan harian bersama pasangan. Catat pengeluaran & pemasukan berdua, konfirmasi koreksi bersama, notifikasi bot Telegram, dan budgeting transparan."
+    />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://cash-book.my.id/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://cash-book.my.id/" />
+    <meta property="og:title" content="Cash-book.my.id — Catat Keuangan Bersama Pasangan dengan Lebih Transparan" />
+    <meta
+      property="og:description"
+      content="Aplikasi catatan keuangan harian bersama pasangan. Dilengkapi konfirmasi koreksi bersama, kebijakan tanggal ketat, dan bot Telegram."
+    />
+    <meta property="og:site_name" content="Cash-book.my.id" />
+    <meta property="og:locale" content="id_ID" />
+    <meta property="og:image" content="https://cash-book.my.id/og-image.svg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Cash-book.my.id — Catat Keuangan Bersama Pasangan" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://cash-book.my.id/" />
+    <meta name="twitter:title" content="Cash-book.my.id — Catat Keuangan Bersama Pasangan" />
+    <meta
+      name="twitter:description"
+      content="Aplikasi catatan harian berdua untuk mengelola pengeluaran bersama dengan konfirmasi koreksi pasangan dan bot Telegram."
+    />
+    <meta name="twitter:image" content="https://cash-book.my.id/og-image.svg" />
+
+    <!-- PWA & Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+
+    <!-- Structured Data (JSON-LD) -->
+    <!-- 1. WebSite Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Cash-book.my.id",
+      "alternateName": "Couple Ledger",
+      "url": "https://cash-book.my.id/",
+      "inLanguage": "id-ID",
+      "description": "Aplikasi catatan keuangan harian bersama pasangan dengan sistem konfirmasi koreksi dan notifikasi Telegram."
+    }
+    </script>
+
+    <!-- 2. SoftwareApplication Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Cash-book.my.id (Couple Ledger)",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "All",
+      "url": "https://cash-book.my.id/",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "IDR"
+      },
+      "description": "Aplikasi catatan keuangan harian bersama pasangan yang transparan dengan fitur konfirmasi koreksi pasangan, kebijakan tanggal ketat, dan bot Telegram.",
+      "featureList": [
+        "Catat pengeluaran dan pemasukan harian berdua",
+        "Ruang keuangan bersama privat maksimal 2 anggota",
+        "Persetujuan koreksi nominal dan penghapusan bersama pasangan (Partner Confirmation)",
+        "Kebijakan tanggal ketat (Strict Date Policy)",
+        "Notifikasi otomatis ke bot Telegram pribadi atau grup pasangan",
+        "Anggaran bulanan dan deteksi ambang batas 80% dan 100%",
+        "Laporan grafik pengeluaran dengan filter Saya vs Pasangan",
+        "Keamanan data: password Argon2id, soft delete permanen, dan append-only audit trail"
+      ]
+    }
+    </script>
+
+    <!-- 3. FAQPage Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Apa keunggulan Cash-book.my.id dibandingkan aplikasi catatan biasa?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Aplikasi ini dirancang khusus untuk pasangan dengan sistem transparansi aktif. Setiap perubahan nominal atau penghapusan transaksi memerlukan persetujuan pasangan (Partner Confirmation), memiliki opsi Kebijakan Tanggal Ketat agar catatan tetap disiplin di hari H, serta terintegrasi langsung dengan bot notifikasi Telegram."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Apakah pasangan saya harus membuat akun terpisah?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Ya. Masing-masing pihak mendaftar dengan akun pribadinya sendiri. Setelah itu, salah satu pihak membuat Ruang Keuangan dan membagikan kode undangan unik kepada pasangannya untuk bergabung dalam satu ruang catatan bersama yang aman."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Bagaimana jika saya atau pasangan salah memasukkan nominal pengeluaran?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Anda dapat mengedit atau meminta penghapusan transaksi tersebut kapan saja. Demi menjaga rasa saling percaya, perubahan atau penghapusan tersebut akan berstatus Menunggu Persetujuan Pasangan hingga disetujui oleh pihak pasangan Anda."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Bagaimana cara kerja notifikasi bot Telegram?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Di dalam menu Pengaturan, Anda dapat menghasilkan token tautan sekali pakai untuk menghubungkan bot Telegram Couple Ledger ke chat pribadi atau grup Telegram berdua. Setiap kali pasangan Anda mencatat pengeluaran, Telegram akan mengirimkan rincian transaksi seketika."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Apakah aplikasi ini memiliki batasan anggota dalam satu ruang?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Ya, demi menjaga privasi dan fokus hubungan berdua, setiap ruang keuangan dibatasi ketat maksimal 2 anggota (Anda dan Pasangan). Pihak ketiga tidak akan dapat bergabung ke dalam ruang Anda."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Apakah data keuangan kami aman dan terjamin kerahasiaannya?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sangat aman. Kata sandi dienkripsi menggunakan algoritma Argon2id modern, sesi login dilindungi token httpOnly, dan setiap modifikasi dicatat dalam log audit permanen (append-only). Data transaksi menggunakan sistem soft delete sehingga riwayat pembukuan Anda tidak pernah hilang."
+          }
+        }
+      ]
+    }
+    </script>
   </head>
   <body class="bg-canvas text-ink antialiased selection:bg-rausch selection:text-white">
-    <div id="root"></div>
+    <!-- Root Container with Prerendered Semantic Fallback for Crawlers & Fast First Paint -->
+    <div id="root">
+      <header style="padding: 16px; border-bottom: 1px solid #dddddd; max-width: 1024px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-weight: bold; font-size: 18px; color: #222222;">
+          <span style="color: #ff385c;">♥</span> Cash-book.my.id (Couple Ledger)
+        </div>
+        <nav style="display: flex; gap: 16px; font-size: 14px;">
+          <a href="/masuk" style="color: #222222; text-decoration: none; font-weight: 600;">Masuk</a>
+          <a href="/daftar" style="background-color: #ff385c; color: #ffffff; padding: 6px 14px; border-radius: 8px; text-decoration: none; font-weight: 600;">Mulai Gratis</a>
+        </nav>
+      </header>
+
+      <main style="max-width: 900px; margin: 0 auto; padding: 40px 16px; font-family: Inter, sans-serif;">
+        <div style="text-align: center; margin-bottom: 40px;">
+          <p style="font-size: 13px; font-weight: 600; color: #ff385c; text-transform: uppercase; margin-bottom: 8px;">
+            Aplikasi Pencatatan Keuangan Khusus Pasangan
+          </p>
+          <h1 style="font-size: 32px; font-weight: 800; color: #222222; margin-bottom: 16px; line-height: 1.2;">
+            Catat Keuangan Bersama Pasangan dengan Lebih Transparan
+          </h1>
+          <p style="font-size: 16px; color: #717171; max-width: 650px; margin: 0 auto 24px auto; line-height: 1.6;">
+            Aplikasi catatan harian berdua untuk mengelola pengeluaran dan pemasukan bersama. Dilengkapi sistem konfirmasi koreksi pasangan, kebijakan tanggal ketat, dan notifikasi instan bot Telegram agar tidak ada salah paham finansial.
+          </p>
+          <div>
+            <a href="/daftar" style="background-color: #ff385c; color: #ffffff; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">
+              Mulai Catat Berdua — Gratis
+            </a>
+          </div>
+        </div>
+
+        <section style="margin-top: 48px;">
+          <h2 style="font-size: 22px; font-weight: bold; color: #222222; margin-bottom: 16px; text-align: center;">
+            Fitur Utama untuk Keharmonisan Keuangan Berdua
+          </h2>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+            <article style="border: 1px solid #dddddd; padding: 20px; border-radius: 14px; background: #ffffff;">
+              <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 8px; color: #222222;">Ruang Eksklusif 2 Anggota</h3>
+              <p style="font-size: 13px; color: #717171; line-height: 1.5;">Ruang keuangan bersama khusus berdua yang dihubungkan dengan kode undangan unik. Data privat dan terisolasi.</p>
+            </article>
+            <article style="border: 1px solid #dddddd; padding: 20px; border-radius: 14px; background: #ffffff;">
+              <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 8px; color: #222222;">Konfirmasi Koreksi Pasangan</h3>
+              <p style="font-size: 13px; color: #717171; line-height: 1.5;">Setiap kali nominal diedit atau dihapus, sistem meminta persetujuan pihak pasangan. Menghindari perubahan sepihak.</p>
+            </article>
+            <article style="border: 1px solid #dddddd; padding: 20px; border-radius: 14px; background: #ffffff;">
+              <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 8px; color: #222222;">Notifikasi Bot Telegram</h3>
+              <p style="font-size: 13px; color: #717171; line-height: 1.5;">Koneksi langsung ke bot Telegram pribadi atau grup berdua untuk update pengeluaran seketika.</p>
+            </article>
+            <article style="border: 1px solid #dddddd; padding: 20px; border-radius: 14px; background: #ffffff;">
+              <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 8px; color: #222222;">Kebijakan Tanggal Ketat</h3>
+              <p style="font-size: 13px; color: #717171; line-height: 1.5;">Pencatatan disiplin di hari H (Strict Today). Mengubah ke tanggal lampau membutuhkan persetujuan pasangan.</p>
+            </article>
+            <article style="border: 1px solid #dddddd; padding: 20px; border-radius: 14px; background: #ffffff;">
+              <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 8px; color: #222222;">Pagu Anggaran & Ambang Batas</h3>
+              <p style="font-size: 13px; color: #717171; line-height: 1.5;">Deteksi otomatis saat pengeluaran bulanan menyentuh 80% dan 100% dari batas anggaran yang disepakati bersama.</p>
+            </article>
+            <article style="border: 1px solid #dddddd; padding: 20px; border-radius: 14px; background: #ffffff;">
+              <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 8px; color: #222222;">Soft Delete & Audit Log</h3>
+              <p style="font-size: 13px; color: #717171; line-height: 1.5;">Data transaksi tidak pernah dihapus permanen. Setiap aktivitas tersimpan rapi pada log audit yang transparan.</p>
+            </article>
+          </div>
+        </section>
+
+        <footer style="margin-top: 60px; padding-top: 24px; border-top: 1px solid #dddddd; text-align: center; font-size: 12px; color: #717171;">
+          <p style="margin-bottom: 8px;">
+            <a href="/" style="color: #717171; text-decoration: none; margin: 0 8px;">Beranda</a> •
+            <a href="/masuk" style="color: #717171; text-decoration: none; margin: 0 8px;">Masuk</a> •
+            <a href="/daftar" style="color: #717171; text-decoration: none; margin: 0 8px;">Daftar</a> •
+            <a href="/kebijakan-privasi" style="color: #717171; text-decoration: none; margin: 0 8px;">Kebijakan Privasi</a> •
+            <a href="/syarat-ketentuan" style="color: #717171; text-decoration: none; margin: 0 8px;">Syarat &amp; Ketentuan</a> •
+            <a href="/tentang" style="color: #717171; text-decoration: none; margin: 0 8px;">Pengembang</a>
+          </p>
+          <p>© 2026 Cash-book.my.id (Couple Ledger) • Dibuat oleh Rendi Julianto.</p>
+        </footer>
+      </main>
+    </div>
+    
+    <!-- Client Application Bootstrap Script -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

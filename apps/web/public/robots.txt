@@ -1,0 +1,27 @@
+# https://cash-book.my.id robots.txt
+# Strict crawling guidelines for Couple Ledger
+
+User-agent: *
+Allow: /
+Allow: /masuk
+Allow: /daftar
+Allow: /kebijakan-privasi
+Allow: /syarat-ketentuan
+Allow: /tentang
+Allow: /assets/
+
+# Disallow private user workspaces, APIs, and sensitive endpoints
+Disallow: /auth/
+Disallow: /workspaces/
+Disallow: /transactions/
+Disallow: /wallets/
+Disallow: /categories/
+Disallow: /budgets/
+Disallow: /telegram/
+Disallow: /swagger/
+Disallow: /health
+Disallow: /app/
+
+# XML Sitemap Location
+Sitemap: https://cash-book.my.id/sitemap.xml
+

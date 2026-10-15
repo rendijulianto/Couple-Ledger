@@ -210,6 +210,21 @@ export class TransactionService {
     }));
   }
 
+  async getMonthlySummary(
+    userId: string,
+    workspaceId: string,
+    month: string,
+  ): Promise<{
+    totalIncomeIdr: number;
+    totalExpenseIdr: number;
+    netBalanceIdr: number;
+    transactionCount: number;
+  }> {
+    await this.ensureWorkspaceMembership(workspaceId, userId);
+    return this.transactions.getMonthlySummary(workspaceId, month);
+  }
+
+
   async getTransactionById(
     userId: string,
     id: string,

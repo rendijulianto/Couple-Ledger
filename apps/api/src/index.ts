@@ -16,12 +16,29 @@ import { existsSync, statSync } from "fs";
 import { resolve } from "path";
 
 export const app = new Elysia()
-  .onRequest(({ set }) => {
+  .onRequest(({ set, request }) => {
     // Security Headers (Hardening)
     set.headers["X-Content-Type-Options"] = "nosniff";
     set.headers["X-Frame-Options"] = "DENY";
     set.headers["X-XSS-Protection"] = "1; mode=block";
     set.headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+
+    const path = new URL(request.url).pathname;
+
+    // Strict Privacy: Never allow search engines to index private API endpoints
+    if (
+      path.startsWith("/auth") ||
+      path.startsWith("/workspaces") ||
+      path.startsWith("/transactions") ||
+      path.startsWith("/wallets") ||
+      path.startsWith("/categories") ||
+      path.startsWith("/budgets") ||
+      path.startsWith("/telegram") ||
+      path.startsWith("/health") ||
+      path.startsWith("/swagger")
+    ) {
+      set.headers["X-Robots-Tag"] = "noindex, nofollow";
+    }
   })
   .use(
     cors({
@@ -79,6 +96,12 @@ if (staticDir) {
 
     const requestedPath = path.replace(/^\//, "");
     if (requestedPath) {
+      if (requestedPath === "robots.txt") {
+        set.headers["Content-Type"] = "text/plain; charset=utf-8";
+      } else if (requestedPath === "sitemap.xml") {
+        set.headers["Content-Type"] = "application/xml; charset=utf-8";
+      }
+
       const targetFile = resolve(staticDir, requestedPath);
       if (existsSync(targetFile)) {
         try {

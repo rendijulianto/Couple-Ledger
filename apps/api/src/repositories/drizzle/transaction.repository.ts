@@ -20,6 +20,7 @@ import {
 import type {
   ITransactionRepository,
   PopulatedTransaction,
+  MonthlySummary,
 } from "../interfaces/transaction.repository.interface";
 import { type TransactionFilter, getMonthDateRange } from "@couple-ledger/shared";
 
@@ -170,6 +171,38 @@ export class DrizzleTransactionRepository implements ITransactionRepository {
       .update(transactions)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
       .where(eq(transactions.id, id));
+  }
+
+  async getMonthlySummary(
+    workspaceId: string,
+    month: string,
+  ): Promise<MonthlySummary> {
+    const { startDate, endDate } = getMonthDateRange(month);
+    const conditions = [
+      eq(transactions.workspaceId, workspaceId),
+      isNull(transactions.deletedAt),
+      gte(transactions.occurredOn, startDate),
+      lte(transactions.occurredOn, endDate),
+    ];
+
+    const [result] = await db
+      .select({
+        totalIncomeIdr: sql<string>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'INCOME' THEN ${transactions.amountIdr} ELSE 0 END), 0)`,
+        totalExpenseIdr: sql<string>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'EXPENSE' THEN ${transactions.amountIdr} ELSE 0 END), 0)`,
+        transactionCount: sql<string>`COUNT(*)`,
+      })
+      .from(transactions)
+      .where(and(...conditions));
+
+    const totalIncomeIdr = result ? Number(result.totalIncomeIdr) : 0;
+    const totalExpenseIdr = result ? Number(result.totalExpenseIdr) : 0;
+
+    return {
+      totalIncomeIdr,
+      totalExpenseIdr,
+      netBalanceIdr: totalIncomeIdr - totalExpenseIdr,
+      transactionCount: result ? Number(result.transactionCount) : 0,
+    };
   }
 
   async sumExpensesByMonth(

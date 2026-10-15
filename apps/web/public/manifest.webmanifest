@@ -1,0 +1,19 @@
+{
+  "name": "Couple Ledger — Catatan Harian Berdua",
+  "short_name": "CoupleLedger",
+  "description": "Catat keuangan bersama pasangan dengan lebih transparan, aman, dan mudah.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "lang": "id",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

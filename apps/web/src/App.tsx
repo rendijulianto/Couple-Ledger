@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import {
   QueryClient,
   QueryClientProvider,
@@ -8,14 +8,31 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { RealtimeProvider } from "./context/RealtimeContext";
+import { RouterProvider, useRouter } from "./lib/router";
 import { Navbar } from "./components/Navbar";
 import { BottomNav, type TabType } from "./components/BottomNav";
 import { QuickAddModal } from "./components/QuickAddModal";
 import { AuthPage } from "./pages/AuthPage";
-import { HomePage } from "./pages/HomePage";
-import { TransactionsPage } from "./pages/TransactionsPage";
-import { ReportsPage } from "./pages/ReportsPage";
-import { SettingsPage } from "./pages/SettingsPage";
+import { LandingPage } from "./pages/LandingPage";
+import { PrivacyPolicyPage } from "./pages/PrivacyPolicyPage";
+import { TermsPage } from "./pages/TermsPage";
+import { AboutDeveloperPage } from "./pages/AboutDeveloperPage";
+
+// Code splitting / Lazy-load heavy dashboard tabs
+const HomePage = lazy(() =>
+  import("./pages/HomePage").then((m) => ({ default: m.HomePage })),
+);
+const TransactionsPage = lazy(() =>
+  import("./pages/TransactionsPage").then((m) => ({
+    default: m.TransactionsPage,
+  })),
+);
+const ReportsPage = lazy(() =>
+  import("./pages/ReportsPage").then((m) => ({ default: m.ReportsPage })),
+);
+const SettingsPage = lazy(() =>
+  import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,6 +42,17 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+function TabFallback() {
+  return (
+    <div className="py-12 flex flex-col items-center justify-center space-y-2 text-ink-muted">
+      <div className="w-8 h-8 rounded-full bg-rausch/10 text-rausch flex items-center justify-center animate-pulse">
+        <Heart className="w-4 h-4 fill-rausch" />
+      </div>
+      <p className="text-xs font-medium">Memuat...</p>
+    </div>
+  );
+}
 
 function AppMain() {
   const { user, activeWorkspace, isLoading } = useAuth();
@@ -48,7 +76,7 @@ function AppMain() {
 
   // If user is not logged in or has no active workspace yet
   if (!user || !activeWorkspace) {
-    return <AuthPage />;
+    return <AuthPage initialMode="login" />;
   }
 
   const handleQuickAddSuccess = () => {
@@ -61,22 +89,24 @@ function AppMain() {
       {/* Top Mobile Sticky Navbar */}
       <Navbar />
 
-      {/* Main Tab Screen Content */}
+      {/* Main Tab Screen Content with Suspense */}
       <main className="flex-1 overflow-x-hidden">
-        {activeTab === "home" && (
-          <HomePage
-            key={`home-${refreshKey}`}
-            onOpenQuickAdd={() => setIsQuickAddOpen(true)}
-            onNavigateToTransactions={() => setActiveTab("transactions")}
-          />
-        )}
-        {activeTab === "transactions" && (
-          <TransactionsPage key={`tx-${refreshKey}`} />
-        )}
-        {activeTab === "reports" && (
-          <ReportsPage key={`rep-${refreshKey}`} />
-        )}
-        {activeTab === "settings" && <SettingsPage />}
+        <Suspense fallback={<TabFallback />}>
+          {activeTab === "home" && (
+            <HomePage
+              key={`home-${refreshKey}`}
+              onOpenQuickAdd={() => setIsQuickAddOpen(true)}
+              onNavigateToTransactions={() => setActiveTab("transactions")}
+            />
+          )}
+          {activeTab === "transactions" && (
+            <TransactionsPage key={`tx-${refreshKey}`} />
+          )}
+          {activeTab === "reports" && (
+            <ReportsPage key={`rep-${refreshKey}`} />
+          )}
+          {activeTab === "settings" && <SettingsPage />}
+        </Suspense>
       </main>
 
       {/* Bottom Sticky Navigation Bar */}
@@ -96,6 +126,52 @@ function AppMain() {
   );
 }
 
+function AppRoutes() {
+  const { pathname } = useRouter();
+  const { user, activeWorkspace, isLoading } = useAuth();
+
+  // Legal & Public Informational Pages
+  if (pathname === "/kebijakan-privasi" || pathname === "/privacy") {
+    return <PrivacyPolicyPage />;
+  }
+
+  if (pathname === "/syarat-ketentuan" || pathname === "/terms") {
+    return <TermsPage />;
+  }
+
+  if (
+    pathname === "/tentang" ||
+    pathname === "/pengembang" ||
+    pathname === "/about" ||
+    pathname === "/developer"
+  ) {
+    return <AboutDeveloperPage />;
+  }
+
+  // Auth pages
+  if (pathname === "/masuk" || pathname === "/login") {
+    if (!isLoading && user && activeWorkspace) {
+      return <AppMain />;
+    }
+    return <AuthPage initialMode="login" />;
+  }
+
+  if (pathname === "/daftar" || pathname === "/register") {
+    if (!isLoading && user && activeWorkspace) {
+      return <AppMain />;
+    }
+    return <AuthPage initialMode="register" />;
+  }
+
+  // Dedicated App Dashboard route
+  if (pathname === "/app" || pathname.startsWith("/app/")) {
+    return <AppMain />;
+  }
+
+  // Default: Public Homepage / Landing Page
+  return <LandingPage />;
+}
+
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -103,7 +179,9 @@ export function App() {
         <ThemeProvider>
           <ToastProvider>
             <RealtimeProvider>
-              <AppMain />
+              <RouterProvider>
+                <AppRoutes />
+              </RouterProvider>
             </RealtimeProvider>
           </ToastProvider>
         </ThemeProvider>

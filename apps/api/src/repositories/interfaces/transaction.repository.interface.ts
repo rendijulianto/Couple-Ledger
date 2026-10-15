@@ -20,12 +20,23 @@ export type PopulatedTransaction = Transaction & {
   } | null;
 };
 
+export interface MonthlySummary {
+  totalIncomeIdr: number;
+  totalExpenseIdr: number;
+  netBalanceIdr: number;
+  transactionCount: number;
+}
+
 export interface ITransactionRepository {
   create(transaction: NewTransaction): Promise<Transaction>;
   findById(id: string): Promise<PopulatedTransaction | null>;
   list(filter: TransactionFilter): Promise<PopulatedTransaction[]>;
   update(id: string, data: Partial<NewTransaction>): Promise<Transaction>;
   softDelete(id: string): Promise<void>;
+  getMonthlySummary(
+    workspaceId: string,
+    month: string,
+  ): Promise<MonthlySummary>;
   sumExpensesByMonth(
     workspaceId: string,
     month: string,
